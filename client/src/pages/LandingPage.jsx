@@ -34,11 +34,11 @@ export default function LandingPage() {
               A smarter way to report campus issues, track maintenance, and hold the system accountable. No more ignored complaints.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button size="lg" onClick={() => navigate('/login')} className="text-base">
+              <Button size="lg" onClick={() => navigate('/register')} className="text-base">
                 Get Started <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <Button size="lg" variant="outline" onClick={() => navigate('/login')} className="text-base">
-                Admin Login
+                Login
               </Button>
             </div>
           </motion.div>
@@ -84,7 +84,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-lg rounded-2xl border border-border bg-card p-8 space-y-4">
           <h2 className="text-xl font-bold">Ready to improve your campus?</h2>
           <p className="text-sm text-muted-foreground">Start reporting issues today and make your campus a better place.</p>
-          <Button size="lg" onClick={() => navigate('/login')}>
+          <Button size="lg" onClick={() => navigate('/register')}>
             Launch FixMyCampus <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>

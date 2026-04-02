@@ -4,6 +4,7 @@ import { Wrench, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { loginUser } from '@/lib/store';
+import { Link } from 'react-router-dom';
 
 const API_BASE = "http://localhost:5001/api";
 
@@ -115,6 +116,13 @@ export default function LoginPage({ onLogin }) {
           <Button type="submit" className="w-full" size="lg" disabled={!email.trim() || !password.trim() || loading}>
             {loading ? 'Logging in...' : 'Continue'} <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
+
+          <p className="text-center text-sm text-muted-foreground">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-primary font-medium hover:underline">
+              Register here
+            </Link>
+          </p>
         </form>
       </motion.div>
     </div>
