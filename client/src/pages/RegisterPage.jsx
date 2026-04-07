@@ -104,7 +104,7 @@ export default function RegisterPage() {
                       : 'border-border bg-card text-muted-foreground hover:border-primary/50'
                   }`}
                 >
-                  {r === 'student' ? '👨‍🎓 Student' : '👨‍💼 Admin'}
+                  {r === 'student' ? 'Student' : 'Admin'}
                 </button>
               ))}
             </div>
