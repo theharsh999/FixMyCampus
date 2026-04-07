@@ -13,6 +13,13 @@ export const createProblem = async (req, res) => {
   try {
     const { title, category, description, location, imageUrl, createdBy, department } = req.body;
 
+    if (!department) {
+      return res.status(400).json({
+        success: false,
+        message: "Department is required",
+      });
+    }
+
     // Generate a unique ticket ID
     const ticketId = generateTicketId();
 
@@ -42,7 +49,7 @@ export const createProblem = async (req, res) => {
 
 // ─── 2. Get All Problems ────────────────────────────────
 // GET /api/problems
-// Optional filters: ?department=Electrical&createdBy=Harsh
+// Optional filters: ?department=MECH&createdBy=Harsh
 export const getProblems = async (req, res) => {
   try {
     const { department, createdBy } = req.query;

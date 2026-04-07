@@ -23,6 +23,7 @@ const studentSchema = new mongoose.Schema(
 
     class: {
       type: String,
+      enum: ["COMP", "IT", "AIML", "AIDS", "ENTC", "IoT", "MECH", "MME", "CSE", "ECS", "CIVIL"],
       required: true,
     },
 

@@ -63,9 +63,10 @@ const problemSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Department responsible (based on category)
+    // Department responsible for handling the complaint
     department: {
       type: String,
+      enum: ["COMP", "IT", "AIML", "AIDS", "ENTC", "IoT", "MECH", "MME", "CSE", "ECS", "CIVIL"],
       required: true,
     },
 

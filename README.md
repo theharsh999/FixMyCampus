@@ -34,7 +34,7 @@ cd server
 npm install
 npm run dev
 ```
-Backend runs at: **http://localhost:5000**
+Backend runs at: **http://localhost:5001**
 
 > **Note:** Update `server/.env` with your MongoDB Atlas connection string before starting the backend.
 

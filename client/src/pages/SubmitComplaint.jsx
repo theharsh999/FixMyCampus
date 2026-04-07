@@ -10,6 +10,7 @@ import { getCurrentUser } from '@/lib/store';
 import { useNavigate } from 'react-router-dom';
 
 const categories = ['Electrical', 'Cleaning', 'Network', 'Plumbing', 'Furniture', 'Other'];
+const departments = ['COMP', 'IT', 'AIML', 'AIDS', 'ENTC', 'IoT', 'MECH', 'MME', 'CSE', 'ECS', 'CIVIL'];
 
 export default function SubmitComplaint() {
   const navigate = useNavigate();
@@ -30,8 +31,15 @@ export default function SubmitComplaint() {
     e.preventDefault();
     try {
       const user = getCurrentUser();
+      const department = user?.class || user?.department;
+
+      if (!department || !departments.includes(department)) {
+        throw new Error('Invalid department mapping for current user. Please re-login.');
+      }
+
       const problem = await createProblem({
         ...form,
+        department,
         createdBy: user?.name || 'Student',
       });
       setSubmitted(problem.ticketId);

@@ -3,26 +3,13 @@
 
 const API_BASE = "http://localhost:5001/api";
 
-// ─── Category → Department mapping ─────────────────────
-const departmentMap = {
-  Electrical: "Electrical",
-  Cleaning: "Cleaning",
-  Network: "IT",
-  Plumbing: "Plumbing",
-  Furniture: "Maintenance",
-  Other: "General",
-};
-
 // ─── 1. Create a new problem ────────────────────────────
 // Used by: SubmitComplaint.jsx
 export async function createProblem(data) {
   const res = await fetch(`${API_BASE}/problems`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      ...data,
-      department: departmentMap[data.category] || "General",
-    }),
+    body: JSON.stringify(data),
   });
 
   const json = await res.json();

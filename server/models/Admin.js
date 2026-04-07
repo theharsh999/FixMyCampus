@@ -23,6 +23,7 @@ const adminSchema = new mongoose.Schema(
 
     department: {
       type: String,
+      enum: ["COMP", "IT", "AIML", "AIDS", "ENTC", "IoT", "MECH", "MME", "CSE", "ECS", "CIVIL"],
       required: true,
     },
   },

@@ -3,9 +3,11 @@ import { motion } from 'framer-motion';
 import { Wrench, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate, Link } from 'react-router-dom';
 
 const API_BASE = "http://localhost:5001/api";
+const departments = ['COMP', 'IT', 'AIML', 'AIDS', 'ENTC', 'IoT', 'MECH', 'MME', 'CSE', 'ECS', 'CIVIL'];
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -147,12 +149,16 @@ export default function RegisterPage() {
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Class</label>
-                  <Input
-                    placeholder="e.g. CS"
-                    value={form.class}
-                    onChange={update('class')}
-                    required
-                  />
+                  <Select value={form.class} onValueChange={(value) => setForm(f => ({ ...f, class: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Division</label>
@@ -180,12 +186,16 @@ export default function RegisterPage() {
           {role === 'admin' && (
             <div className="space-y-2">
               <label className="text-sm font-medium">Department</label>
-              <Input
-                placeholder="e.g. Electrical"
-                value={form.department}
-                onChange={update('department')}
-                required
-              />
+              <Select value={form.department} onValueChange={(value) => setForm(f => ({ ...f, department: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
