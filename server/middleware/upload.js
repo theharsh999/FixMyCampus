@@ -1,19 +1,19 @@
 import multer from "multer";
-import CloudinaryStorage from "multer-storage-cloudinary";
-import cloudinary from "../config/cloudinary.js";
+import path from "path";
+import fs from "fs";
 
-const storage = CloudinaryStorage({
-  cloudinary,
-  params: async () => ({
-    folder: "fixmycampus",
-    allowed_formats: ["jpg", "jpeg", "png", "webp"],
-    format: "webp",
-    transformation: [
-      {
-        quality: "auto",
-      },
-    ],
-  }),
+const uploadsDir = path.resolve("uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || "").toLowerCase() || ".jpg";
+    const safeExt = [".jpg", ".jpeg", ".png", ".webp"].includes(ext) ? ext : ".jpg";
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`);
+  },
 });
 
 function fileFilter(req, file, cb) {
@@ -28,6 +28,9 @@ function fileFilter(req, file, cb) {
 const upload = multer({
   storage,
   fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
 });
 
 export default upload;

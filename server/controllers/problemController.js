@@ -6,6 +6,20 @@ function getOptimizedCloudinaryUrl(url) {
   return url.replace("/upload/", "/upload/f_webp,q_auto,w_auto/");
 }
 
+function resolveIssueImageUrl(req) {
+  if (!req.file) return null;
+
+  if (req.file.path && /^https?:\/\//i.test(req.file.path)) {
+    return getOptimizedCloudinaryUrl(req.file.path);
+  }
+
+  if (req.file.filename) {
+    return `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+  }
+
+  return null;
+}
+
 // ─── Helper: Generate Ticket ID ─────────────────────────
 // Creates a random ID like FMC-1234
 function generateTicketId() {
@@ -102,9 +116,10 @@ export const createProblem = async (req, res) => {
   try {
     const { title, category, priority, description, location, createdBy, department } = req.body;
 
+    const issueImageUrl = resolveIssueImageUrl(req);
     const issueImage = req.file
       ? {
-          url: getOptimizedCloudinaryUrl(req.file.path),
+          url: issueImageUrl,
           filename: req.file.filename,
         }
       : null;
@@ -196,7 +211,7 @@ export const createProblem = async (req, res) => {
       reportedBy: [createdBy],
       description,
       location,
-      imageUrl: issueImage?.url || null,
+      imageUrl: issueImageUrl,
       issueImage,
       createdBy,
       department,
