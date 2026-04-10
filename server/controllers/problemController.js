@@ -13,6 +13,89 @@ function generateTicketId() {
   return `FMC-${num}`;
 }
 
+// Normalize text for lightweight similarity checks.
+function normalizeText(value = "") {
+  return value
+    .toString()
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const STOPWORDS = new Set([
+  "a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "has", "have", "i",
+  "in", "is", "it", "its", "my", "of", "on", "or", "that", "the", "their", "there", "this",
+  "to", "was", "were", "will", "with", "room", "block", "issue", "problem", "campus", "not",
+]);
+
+function stemToken(token) {
+  if (token.length <= 4) return token;
+
+  if (token.endsWith("ing")) return token.slice(0, -3);
+  if (token.endsWith("ed")) return token.slice(0, -2);
+  if (token.endsWith("es")) return token.slice(0, -2);
+  if (token.endsWith("s")) return token.slice(0, -1);
+
+  return token;
+}
+
+function extractKeywords(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return [];
+
+  const unique = new Set();
+
+  for (const token of normalized.split(" ")) {
+    if (!token || STOPWORDS.has(token) || token.length <= 2) continue;
+    if (/^\d+$/.test(token)) continue;
+
+    const stemmed = stemToken(token);
+    if (!stemmed || STOPWORDS.has(stemmed) || stemmed.length <= 2) continue;
+
+    unique.add(stemmed);
+  }
+
+  return [...unique];
+}
+
+function keywordSimilarity(aKeywords, bKeywords) {
+  const aSet = new Set(aKeywords || []);
+  const bSet = new Set(bKeywords || []);
+
+  if (!aSet.size || !bSet.size) {
+    return { score: 0, overlapCount: 0 };
+  }
+
+  let intersection = 0;
+  for (const token of aSet) {
+    if (bSet.has(token)) intersection += 1;
+  }
+
+  const union = new Set([...aSet, ...bSet]).size;
+  const minSize = Math.max(1, Math.min(aSet.size, bSet.size));
+  const jaccard = union ? intersection / union : 0;
+  const overlap = intersection / minSize;
+
+  return {
+    score: Math.max(jaccard, overlap),
+    overlapCount: intersection,
+  };
+}
+
+const PRIORITY_ORDER = { Low: 1, Medium: 2, High: 3 };
+const CLUSTER_SIMILARITY_THRESHOLD = 0.5;
+
+function priorityFromReporterCount(count) {
+  if (count >= 6) return "High";
+  if (count >= 3) return "Medium";
+  return "Low";
+}
+
+function maxPriority(current, computed) {
+  return PRIORITY_ORDER[current] >= PRIORITY_ORDER[computed] ? current : computed;
+}
+
 // ─── 1. Create a New Problem ────────────────────────────
 // POST /api/problems
 export const createProblem = async (req, res) => {
@@ -40,19 +123,62 @@ export const createProblem = async (req, res) => {
       });
     }
 
-    // Prevent duplicate complaints sent within a short time window
-    const fiveSecondsAgo = new Date(Date.now() - 5000);
-    const duplicateProblem = await Problem.findOne({
-      title,
-      description,
-      createdBy,
-      createdAt: { $gte: fiveSecondsAgo },
+    // Smart clustering: compare keyword overlap for complaints from the
+    // same category and location in the last 15 minutes.
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    const combinedInput = `${title} ${description}`;
+    const incomingKeywords = extractKeywords(combinedInput);
+
+    const recentCandidates = await Problem.find({
+      category,
+      department,
+      createdAt: { $gte: fifteenMinutesAgo },
     }).sort({ createdAt: -1 });
 
-    if (duplicateProblem) {
-      return res.status(409).json({
-        success: false,
-        message: "Duplicate submission detected",
+    const normalizedLocation = normalizeText(location);
+
+    const matchedProblem = recentCandidates.find((candidate) => {
+      const isSameLocation = normalizeText(candidate.location) === normalizedLocation;
+      if (!isSameLocation) return false;
+
+      const candidateKeywords =
+        candidate.keywords && candidate.keywords.length
+          ? candidate.keywords
+          : extractKeywords(`${candidate.title} ${candidate.description}`);
+
+      const { score, overlapCount } = keywordSimilarity(incomingKeywords, candidateKeywords);
+      return score >= CLUSTER_SIMILARITY_THRESHOLD && overlapCount >= 1;
+    });
+
+    if (matchedProblem) {
+      matchedProblem.duplicateCount = (matchedProblem.duplicateCount || 0) + 1;
+      matchedProblem.keywords = Array.from(
+        new Set([...(matchedProblem.keywords || []), ...incomingKeywords])
+      );
+
+      // Keep unique reporter IDs for impact-aware prioritization.
+      const hasReporter = (matchedProblem.reportedBy || []).some(
+        (studentId) => studentId.toString() === String(createdBy)
+      );
+
+      if (!hasReporter) {
+        matchedProblem.reportedBy = [...(matchedProblem.reportedBy || []), createdBy];
+      }
+
+      const reporterCount = Math.max(
+        (matchedProblem.reportedBy || []).length,
+        (matchedProblem.duplicateCount || 0) + 1
+      );
+      const computedPriority = priorityFromReporterCount(reporterCount);
+      matchedProblem.priority = maxPriority(matchedProblem.priority || "Low", computedPriority);
+
+      await matchedProblem.save();
+
+      return res.status(200).json({
+        success: true,
+        clustered: true,
+        message: "Complaint matched an existing issue and was added as a duplicate report",
+        data: matchedProblem,
       });
     }
 
@@ -65,6 +191,9 @@ export const createProblem = async (req, res) => {
       title,
       category,
       priority: priority || "Medium",
+      keywords: incomingKeywords,
+      duplicateCount: 0,
+      reportedBy: [createdBy],
       description,
       location,
       imageUrl: issueImage?.url || null,

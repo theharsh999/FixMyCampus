@@ -234,18 +234,21 @@ export default function RegisterPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Year</label>
-                  <select
-                    value={form.year}
-                    onChange={update('year')}
-                    required
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  >
-                    <option value="">Select year</option>
-                    <option value="First Year">First Year</option>
-                    <option value="Second Year">Second Year</option>
-                    <option value="Third Year">Third Year</option>
-                    <option value="Fourth Year">Fourth Year</option>
-                  </select>
+                  <Select value={form.year} onValueChange={(value) => {
+                    setErrorMessage('');
+                    setSuccessMessage('');
+                    setForm(f => ({ ...f, year: value }));
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="First Year">First Year</SelectItem>
+                      <SelectItem value="Second Year">Second Year</SelectItem>
+                      <SelectItem value="Third Year">Third Year</SelectItem>
+                      <SelectItem value="Fourth Year">Fourth Year</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, CheckCircle, Clock, Loader2, AlertTriangle, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getProblems, updateProblem } from '@/lib/api';
 import { getCurrentUser } from '@/lib/store';
 import { StatusBadge, PriorityBadge } from '@/components/StatusBadge';
@@ -77,14 +78,59 @@ export default function AdminDashboard() {
   };
   useEffect(() => { refresh(); }, [user?.department]);
 
-  const filtered = filter === 'All' ? complaints : complaints.filter(c => c.status === filter);
+  const STATUS_SORT = { 'Pending': 1, 'In Progress': 2, 'Resolved': 3 };
+
+  const sorted = [...complaints].sort((a, b) => {
+    // 1) Unassigned & not resolved → top
+    // 2) Assigned (In Progress) → middle
+    // 3) Resolved → bottom
+    const groupOf = (c) => {
+      if (c.status === 'Resolved') return 3;
+      if (c.assignedTo) return 2;
+      return 1;
+    };
+
+    const groupDiff = groupOf(a) - groupOf(b);
+    if (groupDiff !== 0) return groupDiff;
+
+    // Within same group: highest priority first, then newest first
+    const PRIO = { 'High': 1, 'Medium': 2, 'Low': 3 };
+    const prioDiff = (PRIO[a.priority] || 4) - (PRIO[b.priority] || 4);
+    if (prioDiff !== 0) return prioDiff;
+
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
+  const activeComplaints = sorted.filter(c => c.status !== 'Resolved');
+  const filtered = filter === 'All' ? activeComplaints : sorted.filter(c => c.status === filter);
 
   const stats = {
-    total: complaints.length,
+    total: activeComplaints.length,
     pending: complaints.filter(c => c.status === 'Pending').length,
     inProgress: complaints.filter(c => c.status === 'In Progress').length,
     resolved: complaints.filter(c => c.status === 'Resolved').length,
-    urgent: complaints.filter(c => c.priority === 'High').length,
+    urgent: activeComplaints.filter(c => c.priority === 'High').length,
+  };
+
+  const renderImpactBadge = (complaint) => {
+    const dupes = Number(complaint?.duplicateCount || 0);
+    const reportedCount = dupes + 1;
+
+    if (reportedCount < 2) return null;
+
+    const isHighImpact = reportedCount > 5;
+
+    return (
+      <span
+        className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ${
+          isHighImpact
+            ? 'bg-rose-500/15 text-rose-400'
+            : 'bg-amber-500/10 text-amber-400'
+        }`}
+      >
+         {reportedCount} reported
+      </span>
+    );
   };
 
   const handleStatusChange = async (id, status) => {
@@ -116,12 +162,19 @@ export default function AdminDashboard() {
         assignedTo: name,
       }));
 
-      // Update list data immediately
+      // Update list data immediately (backend also sets status to In Progress)
       setComplaints((prev) =>
         prev.map((item) =>
-          item._id === selectedProblem._id ? { ...item, assignedTo: name } : item
+          item._id === selectedProblem._id
+            ? { ...item, assignedTo: name, status: 'In Progress' }
+            : item
         )
       );
+
+      setSelectedProblem((prev) => ({
+        ...prev,
+        status: 'In Progress',
+      }));
 
       setAssignMode(false);
       setAssignedName('');
@@ -224,6 +277,7 @@ export default function AdminDashboard() {
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Location</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Priority</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Impact</th>
             </tr>
           </thead>
           <tbody>
@@ -258,6 +312,9 @@ export default function AdminDashboard() {
                 <td className="px-4 py-3 text-muted-foreground">{c.location}</td>
                 <td className="px-4 py-3"><PriorityBadge priority={c.priority} /></td>
                 <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
+                <td className="px-4 py-3">
+                  {renderImpactBadge(c) || <span className="text-xs text-muted-foreground">-</span>}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -281,6 +338,7 @@ export default function AdminDashboard() {
               <PriorityBadge priority={c.priority} />
             </div>
             <h3 className="font-semibold">{c.title}</h3>
+            {renderImpactBadge(c)}
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{c.location}</span>
               <span>{c.category}</span>
@@ -370,6 +428,7 @@ export default function AdminDashboard() {
                 <StatusBadge status={selectedProblem.status} />
                 <span className="text-sm font-semibold ml-2">Priority:</span>
                 <PriorityBadge priority={selectedProblem.priority} />
+                {renderImpactBadge(selectedProblem)}
               </div>
 
               <div className="pt-2 flex gap-2 flex-wrap">
@@ -387,7 +446,7 @@ export default function AdminDashboard() {
                   Mark as Resolved
                 </Button>
                 <Button
-                  variant="outline"
+                  variant={priorityEditMode ? 'default' : 'outline'}
                   onClick={() => {
                     setPriorityEditMode(true);
                     setNewPriority(selectedProblem.priority || 'Medium');
@@ -398,19 +457,31 @@ export default function AdminDashboard() {
               </div>
 
               {priorityEditMode && (
-                <div className="flex gap-2 mt-2">
-                  <select
-                    value={newPriority}
-                    onChange={(e) => setNewPriority(e.target.value)}
-                    className="border border-border rounded-md px-2 py-1 bg-background"
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                  </select>
+                <div className="mt-3 rounded-xl border border-border/80 bg-muted/30 p-3 sm:p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold">Update Complaint Priority</p>
+                    <PriorityBadge priority={newPriority} />
+                  </div>
 
-                  <Button variant="outline" onClick={handlePrioritySave}>Save</Button>
-                  <Button variant="ghost" onClick={() => setPriorityEditMode(false)}>Cancel</Button>
+                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2">
+                    <Select value={newPriority} onValueChange={setNewPriority}>
+                      <SelectTrigger className="bg-background/90">
+                        <SelectValue placeholder="Select priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Low">Low</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Button variant="outline" onClick={handlePrioritySave}>
+                      Save Priority
+                    </Button>
+                    <Button variant="ghost" onClick={() => setPriorityEditMode(false)}>
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
               )}
 
