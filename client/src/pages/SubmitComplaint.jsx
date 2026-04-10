@@ -23,6 +23,11 @@ export default function SubmitComplaint() {
   const [cooldown, setCooldown] = useState(false);
   const [hasAbuse, setHasAbuse] = useState(false);
   const [showAbusePopup, setShowAbusePopup] = useState(false);
+  const [errors, setErrors] = useState({
+    title: '',
+    description: '',
+    location: '',
+  });
   const [form, setForm] = useState({ title: '', category: '', priority: 'Medium', description: '', location: '' });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -62,6 +67,34 @@ export default function SubmitComplaint() {
 
     if (loading || cooldown) return;
 
+    const trimmedTitle = form.title.trim();
+    const trimmedDescription = form.description.trim();
+    const trimmedLocation = form.location.trim();
+
+    const newErrors = {
+      title: '',
+      description: '',
+      location: '',
+    };
+
+    if (!trimmedTitle) {
+      newErrors.title = 'Title cannot be empty';
+    }
+
+    if (!trimmedDescription) {
+      newErrors.description = 'Description cannot be empty';
+    }
+
+    if (!trimmedLocation) {
+      newErrors.location = 'Location cannot be empty';
+    }
+
+    setErrors(newErrors);
+
+    if (newErrors.title || newErrors.description || newErrors.location) {
+      return;
+    }
+
     const fullText = `${form.title} ${form.description}`;
     if (!fullText.trim()) {
       setHasAbuse(false);
@@ -75,6 +108,7 @@ export default function SubmitComplaint() {
       return;
     }
 
+    setErrors({ title: '', description: '', location: '' });
     setHasAbuse(false);
     setShowAbusePopup(false);
     setLoading(true);
@@ -163,11 +197,18 @@ export default function SubmitComplaint() {
           <div className="space-y-2">
             <label className="text-sm font-medium">Title *</label>
             <Input
+              className={errors.title ? 'border-red-500 focus-visible:ring-red-500' : ''}
               placeholder="e.g. Fan not working in Room 204"
               value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, title: e.target.value }));
+                setErrors((prev) => ({ ...prev, title: '' }));
+              }}
               required
             />
+            {errors.title && (
+              <p className="text-sm text-red-500">{errors.title}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -206,24 +247,37 @@ export default function SubmitComplaint() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Location *</label>
               <Input
+                className={errors.location ? 'border-red-500 focus-visible:ring-red-500' : ''}
                 placeholder="e.g. Room 204, Block A"
                 value={form.location}
-                onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, location: e.target.value }));
+                  setErrors((prev) => ({ ...prev, location: '' }));
+                }}
                 required
               />
+              {errors.location && (
+                <p className="text-sm text-red-500">{errors.location}</p>
+              )}
             </div>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Description *</label>
             <Textarea
-              className={hasAbuse ? 'border-red-500 focus-visible:ring-red-500' : ''}
+              className={hasAbuse || errors.description ? 'border-red-500 focus-visible:ring-red-500' : ''}
               placeholder="Describe the issue in detail..."
               rows={4}
               value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, description: e.target.value }));
+                setErrors((prev) => ({ ...prev, description: '' }));
+              }}
               required
             />
+            {errors.description && (
+              <p className="text-sm text-red-500">{errors.description}</p>
+            )}
           </div>
 
           <div className="space-y-2">
