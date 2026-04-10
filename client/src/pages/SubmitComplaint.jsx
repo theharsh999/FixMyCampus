@@ -31,6 +31,7 @@ export default function SubmitComplaint() {
   const [form, setForm] = useState({ title: '', category: '', priority: 'Medium', description: '', location: '' });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [previewLoaded, setPreviewLoaded] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -59,6 +60,7 @@ export default function SubmitComplaint() {
       const url = URL.createObjectURL(file);
       setImagePreview(url);
       setImageFile(file);
+      setPreviewLoaded(false);
     }
   };
 
@@ -139,6 +141,7 @@ export default function SubmitComplaint() {
       setForm({ title: '', category: '', priority: 'Medium', description: '', location: '' });
       setImageFile(null);
       setImagePreview(null);
+      setPreviewLoaded(false);
       setSubmitted(problem.ticketId);
     } catch (err) {
       console.error('Failed to submit:', err.message);
@@ -297,11 +300,18 @@ export default function SubmitComplaint() {
             </label>
 
             {imagePreview && (
-              <img
-                src={imagePreview}
-                alt="Preview"
-                className="object-cover w-auto h-32 mt-2 rounded-lg"
-              />
+              <div className="relative w-auto h-32 mt-2 rounded-lg overflow-hidden">
+                {!previewLoaded && (
+                  <div className="absolute inset-0 bg-muted animate-pulse" />
+                )}
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  loading="lazy"
+                  onLoad={() => setPreviewLoaded(true)}
+                  className={`object-cover w-auto h-32 rounded-lg transition-all duration-500 ${previewLoaded ? 'opacity-100 blur-0' : 'opacity-50 blur-sm'}`}
+                />
+              </div>
             )}
           </div>
 

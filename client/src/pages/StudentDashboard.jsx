@@ -13,8 +13,13 @@ export default function StudentDashboard() {
   const [selectedProblem, setSelectedProblem] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [loadedImages, setLoadedImages] = useState({});
   const navigate = useNavigate();
   const user = getCurrentUser();
+
+  const markImageLoaded = (key) => {
+    setLoadedImages((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
+  };
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -128,11 +133,18 @@ export default function StudentDashboard() {
             >
               <div className="flex gap-4 items-start">
                 {c.issueImage?.url ? (
-                  <img
-                    src={c.issueImage.url}
-                    alt="Issue"
-                    className="h-20 w-20 rounded-lg object-cover border border-border flex-shrink-0"
-                  />
+                  <div className="relative h-20 w-20 flex-shrink-0">
+                    {!loadedImages[`card-${c._id}`] && (
+                      <div className="absolute inset-0 rounded-lg bg-muted animate-pulse" />
+                    )}
+                    <img
+                      src={c.issueImage.url}
+                      alt="Issue"
+                      loading="lazy"
+                      onLoad={() => markImageLoaded(`card-${c._id}`)}
+                      className={`h-20 w-20 rounded-lg object-cover border border-border transition-all duration-500 ${loadedImages[`card-${c._id}`] ? 'opacity-100 blur-0' : 'opacity-50 blur-sm'}`}
+                    />
+                  </div>
                 ) : (
                   <div className="h-20 w-20 rounded-lg border border-border bg-muted flex-shrink-0" />
                 )}
@@ -178,11 +190,18 @@ export default function StudentDashboard() {
             <h2 className="text-xl font-bold mb-4 pr-8">{selectedProblem.title}</h2>
 
             {selectedProblem.issueImage?.url && (
-              <img
-                src={selectedProblem.issueImage.url}
-                alt="Issue"
-                className="rounded-lg mb-4 max-h-60 w-full object-cover"
-              />
+              <div className="relative rounded-lg mb-4 max-h-60 w-full overflow-hidden">
+                {!loadedImages[`modal-${selectedProblem._id}`] && (
+                  <div className="absolute inset-0 bg-muted animate-pulse" />
+                )}
+                <img
+                  src={selectedProblem.issueImage.url}
+                  alt="Issue"
+                  loading="lazy"
+                  onLoad={() => markImageLoaded(`modal-${selectedProblem._id}`)}
+                  className={`rounded-lg max-h-60 w-full object-cover transition-all duration-500 ${loadedImages[`modal-${selectedProblem._id}`] ? 'opacity-100 blur-0' : 'opacity-50 blur-sm'}`}
+                />
+              </div>
             )}
 
             <div className="space-y-3 text-sm text-gray-800 dark:text-gray-200">

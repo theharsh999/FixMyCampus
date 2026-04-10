@@ -17,7 +17,12 @@ export default function AdminDashboard() {
   const [assignError, setAssignError] = useState('');
   const [priorityEditMode, setPriorityEditMode] = useState(false);
   const [newPriority, setNewPriority] = useState('Medium');
+  const [loadedImages, setLoadedImages] = useState({});
   const user = getCurrentUser();
+
+  const markImageLoaded = (key) => {
+    setLoadedImages((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
+  };
 
   const openModal = (problem) => {
     setSelectedProblem(problem);
@@ -233,7 +238,18 @@ export default function AdminDashboard() {
                 <td className="px-4 py-3 text-xs text-muted-foreground">{format(new Date(c.createdAt), 'dd MMM yyyy')}</td>
                 <td className="px-4 py-3">
                   {c.issueImage?.url ? (
-                    <img src={c.issueImage.url} alt="Issue" className="h-12 w-12 rounded-md object-cover border border-border" />
+                    <div className="relative h-12 w-12">
+                      {!loadedImages[`table-${c._id}`] && (
+                        <div className="absolute inset-0 rounded-md bg-muted animate-pulse" />
+                      )}
+                      <img
+                        src={c.issueImage.url}
+                        alt="Issue"
+                        loading="lazy"
+                        onLoad={() => markImageLoaded(`table-${c._id}`)}
+                        className={`h-12 w-12 rounded-md object-cover border border-border transition-all duration-500 ${loadedImages[`table-${c._id}`] ? 'opacity-100 blur-0' : 'opacity-50 blur-sm'}`}
+                      />
+                    </div>
                   ) : (
                     <span className="text-xs text-muted-foreground">No image</span>
                   )}
@@ -271,7 +287,18 @@ export default function AdminDashboard() {
               <span>{format(new Date(c.createdAt), 'dd MMM yyyy')}</span>
             </div>
             {c.issueImage?.url && (
-              <img src={c.issueImage.url} alt="Issue" className="h-20 w-20 rounded-md object-cover border border-border" />
+              <div className="relative h-20 w-20">
+                {!loadedImages[`mobile-${c._id}`] && (
+                  <div className="absolute inset-0 rounded-md bg-muted animate-pulse" />
+                )}
+                <img
+                  src={c.issueImage.url}
+                  alt="Issue"
+                  loading="lazy"
+                  onLoad={() => markImageLoaded(`mobile-${c._id}`)}
+                  className={`h-20 w-20 rounded-md object-cover border border-border transition-all duration-500 ${loadedImages[`mobile-${c._id}`] ? 'opacity-100 blur-0' : 'opacity-50 blur-sm'}`}
+                />
+              </div>
             )}
             {c.assignedTo && <p className="text-xs text-muted-foreground">Assigned: {c.assignedTo}</p>}
           </motion.div>
@@ -299,11 +326,18 @@ export default function AdminDashboard() {
             <h2 className="text-2xl font-bold pr-8 mb-4">{selectedProblem.title}</h2>
 
             {selectedProblem.issueImage?.url ? (
-              <img
-                src={selectedProblem.issueImage.url}
-                alt="Issue"
-                className="w-full max-h-72 object-cover rounded-lg border border-border mb-4"
-              />
+              <div className="relative w-full max-h-72 rounded-lg border border-border mb-4 overflow-hidden">
+                {!loadedImages[`modal-${selectedProblem._id}`] && (
+                  <div className="absolute inset-0 bg-muted animate-pulse" />
+                )}
+                <img
+                  src={selectedProblem.issueImage.url}
+                  alt="Issue"
+                  loading="lazy"
+                  onLoad={() => markImageLoaded(`modal-${selectedProblem._id}`)}
+                  className={`w-full max-h-72 object-cover rounded-lg transition-all duration-500 ${loadedImages[`modal-${selectedProblem._id}`] ? 'opacity-100 blur-0' : 'opacity-50 blur-sm'}`}
+                />
+              </div>
             ) : (
               <div className="w-full h-40 rounded-lg border border-border bg-muted mb-4 flex items-center justify-center text-sm text-muted-foreground">
                 No image uploaded
