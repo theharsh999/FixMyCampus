@@ -4,10 +4,16 @@ import cloudinary from "../config/cloudinary.js";
 
 const storage = CloudinaryStorage({
   cloudinary,
-  params: {
+  params: async () => ({
     folder: "fixmycampus",
     allowed_formats: ["jpg", "jpeg", "png", "webp"],
-  },
+    format: "webp",
+    transformation: [
+      {
+        quality: "auto",
+      },
+    ],
+  }),
 });
 
 function fileFilter(req, file, cb) {

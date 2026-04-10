@@ -1,5 +1,11 @@
 import Problem from "../models/Problem.js";
 
+function getOptimizedCloudinaryUrl(url) {
+  if (!url || typeof url !== "string") return url;
+  if (url.includes("/upload/f_webp,q_auto,w_auto/")) return url;
+  return url.replace("/upload/", "/upload/f_webp,q_auto,w_auto/");
+}
+
 // ─── Helper: Generate Ticket ID ─────────────────────────
 // Creates a random ID like FMC-1234
 function generateTicketId() {
@@ -98,7 +104,7 @@ export const createProblem = async (req, res) => {
 
     const issueImage = req.file
       ? {
-          url: req.file.path,
+          url: getOptimizedCloudinaryUrl(req.file.path),
           filename: req.file.filename,
         }
       : null;

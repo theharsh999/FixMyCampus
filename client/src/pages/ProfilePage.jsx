@@ -18,6 +18,7 @@ export default function ProfilePage({ onProfileUpdate }) {
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [activity, setActivity] = useState({ total: 0, pending: 0, resolved: 0 });
+  const [profileImgLoaded, setProfileImgLoaded] = useState(false);
 
   const initials = useMemo(() => {
     const base = (user?.name || '').trim();
@@ -85,6 +86,10 @@ export default function ProfilePage({ onProfileUpdate }) {
 
     loadProfile();
   }, [user?.email, user?.role]);
+
+  useEffect(() => {
+    setProfileImgLoaded(false);
+  }, [user?.profileImage?.url]);
 
   if (!user) {
     return (
@@ -202,11 +207,18 @@ export default function ProfilePage({ onProfileUpdate }) {
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-center gap-2">
                 {user.profileImage?.url ? (
-                  <img
-                    src={user.profileImage.url}
-                    alt="Profile"
-                    className="h-16 w-16 rounded-full object-cover border border-border shadow-sm"
-                  />
+                  <div className="relative h-16 w-16">
+                    {!profileImgLoaded && (
+                      <div className="absolute inset-0 rounded-full bg-muted animate-pulse" />
+                    )}
+                    <img
+                      src={user.profileImage.url}
+                      alt="Profile"
+                      loading="lazy"
+                      onLoad={() => setProfileImgLoaded(true)}
+                      className={`h-16 w-16 rounded-full object-cover border border-border shadow-sm transition-all duration-500 ${profileImgLoaded ? 'opacity-100 blur-0' : 'opacity-50 blur-sm'}`}
+                    />
+                  </div>
                 ) : (
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground shadow-sm">
                     {initials}

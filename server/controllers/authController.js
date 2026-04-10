@@ -2,6 +2,12 @@ import Student from "../models/Student.js";
 import Admin from "../models/Admin.js";
 import cloudinary from "../config/cloudinary.js";
 
+function getOptimizedCloudinaryUrl(url) {
+  if (!url || typeof url !== "string") return url;
+  if (url.includes("/upload/f_webp,q_auto,w_auto/")) return url;
+  return url.replace("/upload/", "/upload/f_webp,q_auto,w_auto/");
+}
+
 const getStudentPayload = (student) => ({
   _id: student._id,
   name: student.name,
@@ -253,7 +259,7 @@ export const updateProfileImage = async (req, res) => {
     }
 
     user.profileImage = {
-      url: req.file.path,
+      url: getOptimizedCloudinaryUrl(req.file.path),
       filename: req.file.filename,
     };
 
