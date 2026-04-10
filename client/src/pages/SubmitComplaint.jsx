@@ -21,7 +21,11 @@ export default function SubmitComplaint() {
   const [submitted, setSubmitted] = useState(null);
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(false);
-  const [hasAbuse, setHasAbuse] = useState(false);
+  const [abuseFields, setAbuseFields] = useState({
+    title: false,
+    description: false,
+    location: false,
+  });
   const [showAbusePopup, setShowAbusePopup] = useState(false);
   const [errors, setErrors] = useState({
     title: '',
@@ -97,21 +101,25 @@ export default function SubmitComplaint() {
       return;
     }
 
-    const fullText = `${form.title} ${form.description}`;
-    if (!fullText.trim()) {
-      setHasAbuse(false);
-      setShowAbusePopup(false);
-      return;
-    }
+    const newAbuseState = {
+      title: profanityFilter.check(form.title) || containsAbuse(form.title),
+      description: profanityFilter.check(form.description) || containsAbuse(form.description),
+      location: profanityFilter.check(form.location) || containsAbuse(form.location),
+    };
 
-    if (profanityFilter.check(fullText) || containsAbuse(fullText)) {
-      setHasAbuse(true);
+    setAbuseFields(newAbuseState);
+
+    if (newAbuseState.title || newAbuseState.description || newAbuseState.location) {
       setShowAbusePopup(true);
       return;
     }
 
     setErrors({ title: '', description: '', location: '' });
-    setHasAbuse(false);
+    setAbuseFields({
+      title: false,
+      description: false,
+      location: false,
+    });
     setShowAbusePopup(false);
     setLoading(true);
     setCooldown(true);
@@ -142,6 +150,11 @@ export default function SubmitComplaint() {
       setImageFile(null);
       setImagePreview(null);
       setPreviewLoaded(false);
+      setAbuseFields({
+        title: false,
+        description: false,
+        location: false,
+      });
       setSubmitted(problem.ticketId);
     } catch (err) {
       console.error('Failed to submit:', err.message);
@@ -200,12 +213,13 @@ export default function SubmitComplaint() {
           <div className="space-y-2">
             <label className="text-sm font-medium">Title *</label>
             <Input
-              className={errors.title ? 'border-red-500 focus-visible:ring-red-500' : ''}
+              className={abuseFields.title || errors.title ? 'border-red-500 focus-visible:ring-red-500' : ''}
               placeholder="e.g. Fan not working in Room 204"
               value={form.title}
               onChange={(e) => {
                 setForm((f) => ({ ...f, title: e.target.value }));
                 setErrors((prev) => ({ ...prev, title: '' }));
+                setAbuseFields((prev) => ({ ...prev, title: false }));
               }}
               required
             />
@@ -250,12 +264,13 @@ export default function SubmitComplaint() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Location *</label>
               <Input
-                className={errors.location ? 'border-red-500 focus-visible:ring-red-500' : ''}
+                  className={abuseFields.location || errors.location ? 'border-red-500 focus-visible:ring-red-500' : ''}
                 placeholder="e.g. Room 204, Block A"
                 value={form.location}
                 onChange={(e) => {
                   setForm((f) => ({ ...f, location: e.target.value }));
                   setErrors((prev) => ({ ...prev, location: '' }));
+                    setAbuseFields((prev) => ({ ...prev, location: false }));
                 }}
                 required
               />
@@ -268,13 +283,14 @@ export default function SubmitComplaint() {
           <div className="space-y-2">
             <label className="text-sm font-medium">Description *</label>
             <Textarea
-              className={hasAbuse || errors.description ? 'border-red-500 focus-visible:ring-red-500' : ''}
+              className={abuseFields.description || errors.description ? 'border-red-500 focus-visible:ring-red-500' : ''}
               placeholder="Describe the issue in detail..."
               rows={4}
               value={form.description}
               onChange={(e) => {
                 setForm((f) => ({ ...f, description: e.target.value }));
                 setErrors((prev) => ({ ...prev, description: '' }));
+                setAbuseFields((prev) => ({ ...prev, description: false }));
               }}
               required
             />
@@ -300,7 +316,7 @@ export default function SubmitComplaint() {
             </label>
 
             {imagePreview && (
-              <div className="relative w-auto h-32 mt-2 rounded-lg overflow-hidden">
+              <div className="relative w-auto h-32 mt-2 overflow-hidden rounded-lg">
                 {!previewLoaded && (
                   <div className="absolute inset-0 bg-muted animate-pulse" />
                 )}

@@ -1,8 +1,8 @@
 import Problem from "../models/Problem.js";
 
-function getLocalImagePath(file) {
-  if (!file?.filename) return null;
-  return `/uploads/${file.filename}`;
+function getUploadedImagePath(file) {
+  if (!file?.path) return null;
+  return file.path;
 }
 
 // ─── Helper: Generate Ticket ID ─────────────────────────
@@ -101,11 +101,10 @@ export const createProblem = async (req, res) => {
   try {
     const { title, category, priority, description, location, createdBy, department } = req.body;
 
-    const issueImageUrl = getLocalImagePath(req.file);
+    const issueImageUrl = getUploadedImagePath(req.file);
     const issueImage = issueImageUrl
       ? {
           url: issueImageUrl,
-          filename: req.file.filename,
         }
       : null;
 
@@ -125,7 +124,7 @@ export const createProblem = async (req, res) => {
 
     // Smart clustering: compare keyword overlap for complaints from the
     // same category and location in the last 15 minutes.
-    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    const fifteenMinutesAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const combinedInput = `${title} ${description}`;
     const incomingKeywords = extractKeywords(combinedInput);
 

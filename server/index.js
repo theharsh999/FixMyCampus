@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import path from "path";
 import multer from "multer";
 import connectDB from "./config/db.js";
 import problemRoutes from "./routes/problemRoutes.js";
@@ -22,9 +21,6 @@ app.use(express.json());
 
 // Allow frontend (localhost:8080) to call this backend
 app.use(cors());
-
-// Serve uploaded files from local disk
-app.use("/uploads", express.static(path.resolve("uploads")));
 
 // ─── Test Route ─────────────────────────────────────────
 app.get("/", (req, res) => {
