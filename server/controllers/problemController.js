@@ -125,6 +125,7 @@ export const createProblem = async (req, res) => {
 
     const recentCandidates = await Problem.find({
       category,
+      department,
       createdAt: { $gte: fifteenMinutesAgo },
     }).sort({ createdAt: -1 });
 

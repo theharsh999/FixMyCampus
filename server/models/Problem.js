@@ -114,7 +114,7 @@ const problemSchema = new mongoose.Schema(
 );
 
 // Supports fast recent-cluster lookup queries.
-problemSchema.index({ category: 1, createdAt: -1 });
+problemSchema.index({ department: 1, category: 1, createdAt: -1 });
 
 // Create and export the model
 const Problem = mongoose.model("Problem", problemSchema);

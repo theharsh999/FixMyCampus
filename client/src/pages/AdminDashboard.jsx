@@ -76,39 +76,54 @@ export default function AdminDashboard() {
   const STATUS_SORT = { 'Pending': 1, 'In Progress': 2, 'Resolved': 3 };
 
   const sorted = [...complaints].sort((a, b) => {
-    const groupDiff = (STATUS_SORT[a.status] || 4) - (STATUS_SORT[b.status] || 4);
+    // 1) Unassigned & not resolved → top
+    // 2) Assigned (In Progress) → middle
+    // 3) Resolved → bottom
+    const groupOf = (c) => {
+      if (c.status === 'Resolved') return 3;
+      if (c.assignedTo) return 2;
+      return 1;
+    };
+
+    const groupDiff = groupOf(a) - groupOf(b);
     if (groupDiff !== 0) return groupDiff;
+
+    // Within same group: highest priority first, then newest first
+    const PRIO = { 'High': 1, 'Medium': 2, 'Low': 3 };
+    const prioDiff = (PRIO[a.priority] || 4) - (PRIO[b.priority] || 4);
+    if (prioDiff !== 0) return prioDiff;
+
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
-  const filtered = filter === 'All' ? sorted : sorted.filter(c => c.status === filter);
+  const activeComplaints = sorted.filter(c => c.status !== 'Resolved');
+  const filtered = filter === 'All' ? activeComplaints : sorted.filter(c => c.status === filter);
 
   const stats = {
-    total: complaints.length,
+    total: activeComplaints.length,
     pending: complaints.filter(c => c.status === 'Pending').length,
     inProgress: complaints.filter(c => c.status === 'In Progress').length,
     resolved: complaints.filter(c => c.status === 'Resolved').length,
-    urgent: complaints.filter(c => c.priority === 'High').length,
+    urgent: activeComplaints.filter(c => c.priority === 'High').length,
   };
 
   const renderImpactBadge = (complaint) => {
-    const reportedCount = Number(complaint?.duplicateCount || 0);
+    const dupes = Number(complaint?.duplicateCount || 0);
+    const reportedCount = dupes + 1;
 
-    if (reportedCount <= 1) {
-      return null;
-    }
+    if (reportedCount < 2) return null;
 
     const isHighImpact = reportedCount > 5;
 
     return (
       <span
-        className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
+        className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ${
           isHighImpact
-            ? 'border-rose-500/40 bg-rose-500/15 text-rose-300'
-            : 'border-orange-500/40 bg-orange-500/15 text-orange-200'
+            ? 'bg-rose-500/15 text-rose-400'
+            : 'bg-amber-500/10 text-amber-400'
         }`}
       >
-        🔥 {reportedCount} students reported this
+         {reportedCount} reported
       </span>
     );
   };
@@ -142,12 +157,19 @@ export default function AdminDashboard() {
         assignedTo: name,
       }));
 
-      // Update list data immediately
+      // Update list data immediately (backend also sets status to In Progress)
       setComplaints((prev) =>
         prev.map((item) =>
-          item._id === selectedProblem._id ? { ...item, assignedTo: name } : item
+          item._id === selectedProblem._id
+            ? { ...item, assignedTo: name, status: 'In Progress' }
+            : item
         )
       );
+
+      setSelectedProblem((prev) => ({
+        ...prev,
+        status: 'In Progress',
+      }));
 
       setAssignMode(false);
       setAssignedName('');
