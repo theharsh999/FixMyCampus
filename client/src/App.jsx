@@ -7,7 +7,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { getCurrentUser } from '@/lib/store';
 import { ThemeProvider } from '@/hooks/use-theme';
 import AppHeader from '@/components/AppHeader';
-import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import StudentDashboard from '@/pages/StudentDashboard';
 import AdminDashboard from '@/pages/AdminDashboard';
@@ -32,7 +31,7 @@ const App = () => {
         <BrowserRouter>
           {user && <AppHeader user={user} onLogout={refresh} />}
           <Routes>
-            <Route path="/" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} /> : <LandingPage />} />
+            <Route path="/" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} /> : <LoginPage onLogin={refresh}/>} />
             <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} /> : <LoginPage onLogin={refresh} />} />
             <Route path="/register" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} /> : <RegisterPage />} />
             <Route path="/dashboard" element={user?.role === 'student' ? <StudentDashboard /> : <Navigate to="/login" />} />

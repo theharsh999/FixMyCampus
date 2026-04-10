@@ -66,6 +66,27 @@ const problemSchema = new mongoose.Schema(
       default: "Medium",
     },
 
+    // Preprocessed complaint keywords used for similarity-based clustering.
+    keywords: {
+      type: [String],
+      default: [],
+    },
+
+    // How many duplicate submissions were merged into this complaint.
+    duplicateCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    // Unique students who reported this complaint cluster.
+    reportedBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Student",
+      },
+    ],
+
     // Student who submitted the complaint
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -91,6 +112,9 @@ const problemSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Supports fast recent-cluster lookup queries.
+problemSchema.index({ category: 1, createdAt: -1 });
 
 // Create and export the model
 const Problem = mongoose.model("Problem", problemSchema);
