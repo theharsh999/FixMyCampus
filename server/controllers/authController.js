@@ -1,5 +1,6 @@
 import Student from "../models/Student.js";
 import Admin from "../models/Admin.js";
+import bcrypt from "bcrypt";
 import cloudinary from "../config/cloudinary.js";
 
 function getUploadedImagePath(file) {
@@ -70,16 +71,23 @@ export const studentRegister = async (req, res) => {
       });
     }
 
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     // Create new student
-    const student = await Student.create({
+    const student = new Student({
       name,
       email,
-      password,
+      password: hashedPassword,
       class: studentClass,
       rollNo: parsedRollNo,
       div,
       year,
     });
+
+    console.log("Before save:", student.password);
+    await student.save();
+    console.log("After save:", student.password);
 
     res.status(201).json({
       success: true,
@@ -115,11 +123,12 @@ export const studentLogin = async (req, res) => {
       });
     }
 
-    // Check password (plain text for now)
-    if (student.password !== password) {
+    const isMatch = await bcrypt.compare(password, student.password);
+
+    if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: "Invalid email or password",
+        message: "Invalid credentials",
       });
     }
 
@@ -150,13 +159,20 @@ export const adminRegister = async (req, res) => {
       });
     }
 
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     // Create new admin
-    const admin = await Admin.create({
+    const admin = new Admin({
       name,
       email,
-      password,
+      password: hashedPassword,
       department,
     });
+
+    console.log("Before save:", admin.password);
+    await admin.save();
+    console.log("After save:", admin.password);
 
     res.status(201).json({
       success: true,
@@ -185,11 +201,12 @@ export const adminLogin = async (req, res) => {
       });
     }
 
-    // Check password (plain text for now)
-    if (admin.password !== password) {
+    const isMatch = await bcrypt.compare(password, admin.password);
+
+    if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: "Invalid email or password",
+        message: "Invalid credentials",
       });
     }
 

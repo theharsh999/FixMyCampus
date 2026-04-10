@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
 // ─── Student Schema ─────────────────────────────────────
 // Students who submit complaints on campus
@@ -55,6 +56,23 @@ const studentSchema = new mongoose.Schema(
 );
 
 studentSchema.index({ class: 1, rollNo: 1 }, { unique: true });
+
+studentSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  if (this.password.startsWith("$2")) return next();
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+
+  next();
+});
+
+studentSchema.methods.comparePassword = async function (enteredPassword) {
+  if (this.password.startsWith("$2")) {
+    return await bcrypt.compare(enteredPassword, this.password);
+  }
+
+  return enteredPassword === this.password;
+};
 
 const Student = mongoose.model("Student", studentSchema);
 
