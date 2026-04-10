@@ -1,7 +1,7 @@
 // ─── API Helper for FixMyCampus ─────────────────────────
 // Backend API calls (MongoDB source of truth)
 
-const API_BASE = "http://localhost:5001/api";
+const API_BASE = "https://fixmycampus-e2zg.onrender.com/api";
 const BACKEND_BASE = API_BASE.replace(/\/api$/, "");
 
 export function resolveMediaUrl(pathOrUrl) {
