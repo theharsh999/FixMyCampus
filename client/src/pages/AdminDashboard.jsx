@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { MapPin, CheckCircle, Clock, Loader2, AlertTriangle, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getProblems, updateProblem } from '@/lib/api';
+import { getProblems, resolveMediaUrl, updateProblem } from '@/lib/api';
 import { getCurrentUser } from '@/lib/store';
 import { StatusBadge, PriorityBadge } from '@/components/StatusBadge';
 import { format } from 'date-fns';
@@ -297,7 +297,7 @@ export default function AdminDashboard() {
                         <div className="absolute inset-0 rounded-md bg-muted animate-pulse" />
                       )}
                       <img
-                        src={c.issueImage.url}
+                        src={resolveMediaUrl(c.issueImage.url)}
                         alt="Issue"
                         loading="lazy"
                         onLoad={() => markImageLoaded(`table-${c._id}`)}
@@ -350,7 +350,7 @@ export default function AdminDashboard() {
                   <div className="absolute inset-0 rounded-md bg-muted animate-pulse" />
                 )}
                 <img
-                  src={c.issueImage.url}
+                  src={resolveMediaUrl(c.issueImage.url)}
                   alt="Issue"
                   loading="lazy"
                   onLoad={() => markImageLoaded(`mobile-${c._id}`)}
@@ -389,7 +389,7 @@ export default function AdminDashboard() {
                   <div className="absolute inset-0 bg-muted animate-pulse" />
                 )}
                 <img
-                  src={selectedProblem.issueImage.url}
+                  src={resolveMediaUrl(selectedProblem.issueImage.url)}
                   alt="Issue"
                   loading="lazy"
                   onLoad={() => markImageLoaded(`modal-${selectedProblem._id}`)}

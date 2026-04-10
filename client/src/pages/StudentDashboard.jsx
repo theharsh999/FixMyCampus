@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Clock, Loader, CheckCircle2, MapPin, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getProblems } from '@/lib/api';
+import { getProblems, resolveMediaUrl } from '@/lib/api';
 import { getCurrentUser } from '@/lib/store';
 import { StatusBadge, PriorityBadge } from '@/components/StatusBadge';
 import { useNavigate } from 'react-router-dom';
@@ -138,7 +138,7 @@ export default function StudentDashboard() {
                       <div className="absolute inset-0 rounded-lg bg-muted animate-pulse" />
                     )}
                     <img
-                      src={c.issueImage.url}
+                      src={resolveMediaUrl(c.issueImage.url)}
                       alt="Issue"
                       loading="lazy"
                       onLoad={() => markImageLoaded(`card-${c._id}`)}
@@ -195,7 +195,7 @@ export default function StudentDashboard() {
                   <div className="absolute inset-0 bg-muted animate-pulse" />
                 )}
                 <img
-                  src={selectedProblem.issueImage.url}
+                  src={resolveMediaUrl(selectedProblem.issueImage.url)}
                   alt="Issue"
                   loading="lazy"
                   onLoad={() => markImageLoaded(`modal-${selectedProblem._id}`)}

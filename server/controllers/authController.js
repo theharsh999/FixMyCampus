@@ -1,11 +1,17 @@
 import Student from "../models/Student.js";
 import Admin from "../models/Admin.js";
-import cloudinary from "../config/cloudinary.js";
+import fs from "fs";
+import path from "path";
 
-function getOptimizedCloudinaryUrl(url) {
-  if (!url || typeof url !== "string") return url;
-  if (url.includes("/upload/f_webp,q_auto,w_auto/")) return url;
-  return url.replace("/upload/", "/upload/f_webp,q_auto,w_auto/");
+function getLocalImagePath(file) {
+  if (!file?.filename) return null;
+  return `/uploads/${file.filename}`;
+}
+
+function getLocalImageDiskPath(imageUrl) {
+  if (!imageUrl || typeof imageUrl !== "string") return null;
+  if (!imageUrl.startsWith("/uploads/")) return null;
+  return path.resolve("uploads", path.basename(imageUrl));
 }
 
 const getStudentPayload = (student) => ({
@@ -250,16 +256,21 @@ export const updateProfileImage = async (req, res) => {
       });
     }
 
-    if (user.profileImage && user.profileImage.filename) {
+    if (user.profileImage?.url) {
       try {
-        await cloudinary.uploader.destroy(user.profileImage.filename);
+        const previousImagePath = getLocalImageDiskPath(user.profileImage.url);
+        if (previousImagePath && fs.existsSync(previousImagePath)) {
+          fs.unlinkSync(previousImagePath);
+        }
       } catch (err) {
         console.log("Old image delete failed");
       }
     }
 
+    const profileImageUrl = getLocalImagePath(req.file);
+
     user.profileImage = {
-      url: getOptimizedCloudinaryUrl(req.file.path),
+      url: profileImageUrl,
       filename: req.file.filename,
     };
 

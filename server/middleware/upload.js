@@ -7,17 +7,25 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname || "").toLowerCase() || ".jpg";
     const safeExt = [".jpg", ".jpeg", ".png", ".webp"].includes(ext) ? ext : ".jpg";
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`);
+    const basename = path
+      .basename(file.originalname || "image", ext)
+      .replace(/\s+/g, "-")
+      .replace(/[^a-zA-Z0-9-_]/g, "")
+      .slice(0, 50) || "image";
+
+    cb(null, `${Date.now()}-${basename}${safeExt}`);
   },
 });
 
 function fileFilter(req, file, cb) {
-  if (file.mimetype && file.mimetype.startsWith("image/")) {
+  if (file.mimetype && ALLOWED_MIME_TYPES.has(file.mimetype.toLowerCase())) {
     cb(null, true);
     return;
   }

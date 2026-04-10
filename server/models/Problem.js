@@ -43,7 +43,7 @@ const problemSchema = new mongoose.Schema(
       default: null,
     },
 
-    // Cloudinary image details
+    // Uploaded image details
     issueImage: {
       type: {
         url: String,

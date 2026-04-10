@@ -1,23 +1,8 @@
 import Problem from "../models/Problem.js";
 
-function getOptimizedCloudinaryUrl(url) {
-  if (!url || typeof url !== "string") return url;
-  if (url.includes("/upload/f_webp,q_auto,w_auto/")) return url;
-  return url.replace("/upload/", "/upload/f_webp,q_auto,w_auto/");
-}
-
-function resolveIssueImageUrl(req) {
-  if (!req.file) return null;
-
-  if (req.file.path && /^https?:\/\//i.test(req.file.path)) {
-    return getOptimizedCloudinaryUrl(req.file.path);
-  }
-
-  if (req.file.filename) {
-    return `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-  }
-
-  return null;
+function getLocalImagePath(file) {
+  if (!file?.filename) return null;
+  return `/uploads/${file.filename}`;
 }
 
 // ─── Helper: Generate Ticket ID ─────────────────────────
@@ -116,8 +101,8 @@ export const createProblem = async (req, res) => {
   try {
     const { title, category, priority, description, location, createdBy, department } = req.body;
 
-    const issueImageUrl = resolveIssueImageUrl(req);
-    const issueImage = req.file
+    const issueImageUrl = getLocalImagePath(req.file);
+    const issueImage = issueImageUrl
       ? {
           url: issueImageUrl,
           filename: req.file.filename,
@@ -217,12 +202,12 @@ export const createProblem = async (req, res) => {
       department,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: problem,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });

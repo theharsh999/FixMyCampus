@@ -2,16 +2,37 @@
 // Backend API calls (MongoDB source of truth)
 
 const API_BASE = "http://localhost:5001/api";
+const BACKEND_BASE = API_BASE.replace(/\/api$/, "");
+
+export function resolveMediaUrl(pathOrUrl) {
+  if (!pathOrUrl) return "";
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  if (pathOrUrl.startsWith("/")) return `${BACKEND_BASE}${pathOrUrl}`;
+  return `${BACKEND_BASE}/${pathOrUrl}`;
+}
 
 // ─── 1. Create a new problem ────────────────────────────
 // Used by: SubmitComplaint.jsx
-export async function createProblem(data) {
-  const isFormData = data instanceof FormData;
-  const res = await fetch(`${API_BASE}/problems`, {
-    method: "POST",
-    headers: isFormData ? undefined : { "Content-Type": "application/json" },
-    body: isFormData ? data : JSON.stringify(data),
-  });
+export const createProblem = async (formData) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  let res;
+
+  try {
+    res = await fetch(`${API_BASE}/problems`, {
+      method: "POST",
+      body: formData,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error("Request timed out while uploading image. Please try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const json = await res.json();
 

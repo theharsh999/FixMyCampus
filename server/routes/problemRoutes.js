@@ -5,7 +5,22 @@ import upload from "../middleware/upload.js";
 const router = express.Router();
 
 // POST   /api/problems      → Create a new problem
-router.post("/", upload.single("image"), createProblem);
+router.post(
+  "/",
+  (req, res, next) => {
+    upload.single("image")(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({
+          success: false,
+          message: err.message || "Image upload failed",
+        });
+      }
+
+      return next();
+    });
+  },
+  createProblem
+);
 
 // GET    /api/problems      → Get all problems (with optional filters)
 router.get("/", getProblems);
