@@ -10,12 +10,16 @@ import { getCurrentUser } from '@/lib/store';
 import { useNavigate } from 'react-router-dom';
 
 const categories = ['Electrical', 'Cleaning', 'Network', 'Plumbing', 'Furniture', 'Other'];
+const priorities = ['Low', 'Medium', 'High'];
 const departments = ['COMP', 'IT', 'AIML', 'AIDS', 'ENTC', 'IoT', 'MECH', 'MME', 'CSE', 'ECS', 'CIVIL'];
 
 export default function SubmitComplaint() {
   const navigate = useNavigate();
   const [submitted, setSubmitted] = useState(null);
-  const [form, setForm] = useState({ title: '', category: '', description: '', location: '', imageUrl: '' });
+  const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(false);
+  const [form, setForm] = useState({ title: '', category: '', priority: 'Medium', description: '', location: '' });
+  const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
   const handleImageChange = (e) => {
@@ -23,28 +27,54 @@ export default function SubmitComplaint() {
     if (file) {
       const url = URL.createObjectURL(file);
       setImagePreview(url);
-      setForm(f => ({ ...f, imageUrl: url }));
+      setImageFile(file);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Stop repeated clicks while request is in progress or cooldown is active
+    if (loading || cooldown) return;
+
+    setLoading(true);
+    setCooldown(true);
+
     try {
       const user = getCurrentUser();
-      const department = user?.class || user?.department;
+      const department = user?.class;
 
       if (!department || !departments.includes(department)) {
         throw new Error('Invalid department mapping for current user. Please re-login.');
       }
 
-      const problem = await createProblem({
-        ...form,
-        department,
-        createdBy: user?.name || 'Student',
-      });
+      const formData = new FormData();
+      formData.append('title', form.title);
+      formData.append('category', form.category);
+      formData.append('priority', form.priority);
+      formData.append('description', form.description);
+      formData.append('location', form.location);
+      formData.append('department', department);
+      formData.append('createdBy', user?._id || '');
+
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+
+      const problem = await createProblem(formData);
+      setForm({ title: '', category: '', priority: 'Medium', description: '', location: '' });
+      setImageFile(null);
+      setImagePreview(null);
       setSubmitted(problem.ticketId);
     } catch (err) {
       console.error('Failed to submit:', err.message);
+    } finally {
+      setLoading(false);
+
+      // Keep button disabled briefly to avoid accidental double submits
+      setTimeout(() => {
+        setCooldown(false);
+      }, 2500);
     }
   };
 
@@ -80,13 +110,23 @@ export default function SubmitComplaint() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Category *</label>
               <Select value={form.category} onValueChange={(v) => setForm(f => ({ ...f, category: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>
                   {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Priority *</label>
+              <Select value={form.priority} onValueChange={(v) => setForm(f => ({ ...f, priority: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select priority" /></SelectTrigger>
+                <SelectContent>
+                  {priorities.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -128,8 +168,13 @@ export default function SubmitComplaint() {
             )}
           </div>
 
-          <Button type="submit" size="lg" className="w-full" disabled={!form.title || !form.category || !form.location || !form.description}>
-            <Send className="mr-2 h-4 w-4" /> Submit Complaint
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full"
+            disabled={loading || cooldown || !form.title || !form.category || !form.location || !form.description}
+          >
+            <Send className="mr-2 h-4 w-4" /> {loading ? 'Submitting...' : 'Submit Complaint'}
           </Button>
         </form>
       </motion.div>

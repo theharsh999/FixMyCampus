@@ -1,10 +1,11 @@
 import express from "express";
 import { createProblem, getProblems, updateProblem } from "../controllers/problemController.js";
+import upload from "../middleware/upload.js";
 
 const router = express.Router();
 
 // POST   /api/problems      → Create a new problem
-router.post("/", createProblem);
+router.post("/", upload.single("image"), createProblem);
 
 // GET    /api/problems      → Get all problems (with optional filters)
 router.get("/", getProblems);

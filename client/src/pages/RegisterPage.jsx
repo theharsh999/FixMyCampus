@@ -4,6 +4,7 @@ import { Wrench, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getCurrentUser, loginUser } from '@/lib/store';
 import { useNavigate, Link } from 'react-router-dom';
 
 const API_BASE = "http://localhost:5001/api";
@@ -13,26 +14,60 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const [role, setRole] = useState('student');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [form, setForm] = useState({
     name: '',
     email: '',
     password: '',
     class: '',
+    rollNo: '',
     div: '',
     year: '',
     department: '',
   });
 
-  const update = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
+  const rollNoError = (() => {
+    if (role !== 'student') return '';
+    if (form.rollNo === '') return 'Roll number is required';
+
+    const roll = Number(form.rollNo);
+    if (Number.isNaN(roll) || roll < 1) return 'Invalid roll number';
+    if (roll > 80) return 'Roll number cannot exceed 80';
+
+    return '';
+  })();
+
+  const update = (field) => (e) => {
+    setErrorMessage('');
+    setSuccessMessage('');
+    setForm(f => ({ ...f, [field]: e.target.value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (role === 'student' && rollNoError) {
+      setErrorMessage(rollNoError);
+      return;
+    }
+
     setLoading(true);
 
     try {
       // Build request body based on role
       const body = role === 'student'
-        ? { name: form.name, email: form.email, password: form.password, class: form.class, div: form.div, year: form.year }
+        ? {
+            name: form.name,
+            email: form.email,
+            password: form.password,
+            class: form.class,
+            rollNo: Number(form.rollNo),
+            div: form.div,
+            year: form.year,
+          }
         : { name: form.name, email: form.email, password: form.password, department: form.department };
 
       const endpoint = role === 'student'
@@ -48,14 +83,21 @@ export default function RegisterPage() {
       const json = await res.json();
 
       if (!res.ok) {
-        alert(json.message || "Registration failed");
+        setErrorMessage(json.message || 'Registration failed');
         return;
       }
 
-      alert("Registered successfully! Please login.");
-      navigate('/login');
+      const userData = json.data;
+      loginUser(userData);
+      console.log('Saved user:', getCurrentUser());
+
+      if (userData?.role === 'admin') {
+        window.location.href = '/admin';
+      } else {
+        window.location.href = '/dashboard';
+      }
     } catch (err) {
-      alert("Server error. Please try again.");
+      setErrorMessage('Server error. Please try again.');
       console.error("Register error:", err.message);
     } finally {
       setLoading(false);
@@ -64,7 +106,7 @@ export default function RegisterPage() {
 
   // Check if form is valid based on role
   const isValid = role === 'student'
-    ? form.name && form.email && form.password && form.class && form.div && form.year
+    ? form.name && form.email && form.password && form.class && form.rollNo !== '' && form.div && form.year && !rollNoError
     : form.name && form.email && form.password && form.department;
 
   return (
@@ -97,7 +139,11 @@ export default function RegisterPage() {
                 <button
                   key={r}
                   type="button"
-                  onClick={() => setRole(r)}
+                  onClick={() => {
+                    setErrorMessage('');
+                    setSuccessMessage('');
+                    setRole(r);
+                  }}
                   className={`rounded-lg border-2 p-3 text-sm font-semibold capitalize transition-all ${
                     role === r
                       ? 'border-primary bg-accent text-accent-foreground'
@@ -146,10 +192,14 @@ export default function RegisterPage() {
           {/* Student-Specific Fields */}
           {role === 'student' && (
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Class</label>
-                  <Select value={form.class} onValueChange={(value) => setForm(f => ({ ...f, class: value }))}>
+                  <Select value={form.class} onValueChange={(value) => {
+                    setErrorMessage('');
+                    setSuccessMessage('');
+                    setForm(f => ({ ...f, class: value }));
+                  }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select class" />
                     </SelectTrigger>
@@ -159,6 +209,19 @@ export default function RegisterPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Roll Number</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="80"
+                    placeholder="e.g. 12"
+                    value={form.rollNo}
+                    onChange={update('rollNo')}
+                    required
+                  />
+                  {rollNoError && <p className="text-xs text-destructive">{rollNoError}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Division</label>
@@ -171,12 +234,18 @@ export default function RegisterPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Year</label>
-                  <Input
-                    placeholder="e.g. 3rd"
+                  <select
                     value={form.year}
                     onChange={update('year')}
                     required
-                  />
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="">Select year</option>
+                    <option value="First Year">First Year</option>
+                    <option value="Second Year">Second Year</option>
+                    <option value="Third Year">Third Year</option>
+                    <option value="Fourth Year">Fourth Year</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -186,7 +255,11 @@ export default function RegisterPage() {
           {role === 'admin' && (
             <div className="space-y-2">
               <label className="text-sm font-medium">Department</label>
-              <Select value={form.department} onValueChange={(value) => setForm(f => ({ ...f, department: value }))}>
+              <Select value={form.department} onValueChange={(value) => {
+                setErrorMessage('');
+                setSuccessMessage('');
+                setForm(f => ({ ...f, department: value }));
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
@@ -199,8 +272,16 @@ export default function RegisterPage() {
             </div>
           )}
 
+          {errorMessage && (
+            <p className="text-sm text-red-500">{errorMessage}</p>
+          )}
+
+          {successMessage && (
+            <p className="text-sm text-green-500">{successMessage}</p>
+          )}
+
           <Button type="submit" className="w-full" size="lg" disabled={!isValid || loading}>
-            {loading ? 'Creating account...' : 'Register'} <ArrowRight className="ml-2 h-4 w-4" />
+            {loading ? 'Registering...' : 'Register'} <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">

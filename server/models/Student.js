@@ -27,6 +27,13 @@ const studentSchema = new mongoose.Schema(
       required: true,
     },
 
+    rollNo: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 80,
+    },
+
     div: {
       type: String,
       required: true,
@@ -36,11 +43,18 @@ const studentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
+    profileImage: {
+      url: String,
+      filename: String,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+studentSchema.index({ class: 1, rollNo: 1 }, { unique: true });
 
 const Student = mongoose.model("Student", studentSchema);
 

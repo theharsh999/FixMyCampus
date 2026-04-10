@@ -23,8 +23,9 @@ export function PriorityBadge({ priority }) {
   return (
     <span className={cn(
       'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold',
-      priority === 'Low' && 'bg-muted text-muted-foreground',
+      priority === 'Low' && 'bg-emerald-500/15 text-emerald-600',
       priority === 'Medium' && 'bg-warning/15 text-warning',
+      priority === 'High' && 'bg-destructive/15 text-destructive',
       priority === 'Urgent' && 'bg-destructive/15 text-destructive',
     )}>
       {priority}

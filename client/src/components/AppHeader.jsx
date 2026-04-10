@@ -16,10 +16,14 @@ export default function AppHeader({ user, onLogout }) {
   };
 
   const navItems = user.role === 'admin'
-    ? [{ label: 'Dashboard', path: '/admin' }]
+    ? [
+        { label: 'Dashboard', path: '/admin' },
+        { label: 'Profile', path: '/profile' },
+      ]
     : [
         { label: 'Dashboard', path: '/dashboard' },
         { label: 'New Complaint', path: '/submit' },
+        { label: 'Profile', path: '/profile' },
       ];
 
   return (

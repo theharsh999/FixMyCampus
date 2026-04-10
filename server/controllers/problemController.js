@@ -11,12 +11,42 @@ function generateTicketId() {
 // POST /api/problems
 export const createProblem = async (req, res) => {
   try {
-    const { title, category, description, location, imageUrl, createdBy, department } = req.body;
+    const { title, category, priority, description, location, createdBy, department } = req.body;
+
+    const issueImage = req.file
+      ? {
+          url: req.file.path,
+          filename: req.file.filename,
+        }
+      : null;
 
     if (!department) {
       return res.status(400).json({
         success: false,
         message: "Department is required",
+      });
+    }
+
+    if (!createdBy) {
+      return res.status(400).json({
+        success: false,
+        message: "Student reference is required",
+      });
+    }
+
+    // Prevent duplicate complaints sent within a short time window
+    const fiveSecondsAgo = new Date(Date.now() - 5000);
+    const duplicateProblem = await Problem.findOne({
+      title,
+      description,
+      createdBy,
+      createdAt: { $gte: fiveSecondsAgo },
+    }).sort({ createdAt: -1 });
+
+    if (duplicateProblem) {
+      return res.status(409).json({
+        success: false,
+        message: "Duplicate submission detected",
       });
     }
 
@@ -28,9 +58,11 @@ export const createProblem = async (req, res) => {
       ticketId,
       title,
       category,
+      priority: priority || "Medium",
       description,
       location,
-      imageUrl,
+      imageUrl: issueImage?.url || null,
+      issueImage,
       createdBy,
       department,
     });
@@ -54,13 +86,15 @@ export const getProblems = async (req, res) => {
   try {
     const { department, createdBy } = req.query;
 
-    // Build filter object based on query parameters
+    // Build filter object based on simple query parameters
     const filter = {};
     if (department) filter.department = department;
     if (createdBy) filter.createdBy = createdBy;
 
     // Fetch problems, newest first
-    const problems = await Problem.find(filter).sort({ createdAt: -1 });
+    const problems = await Problem.find(filter)
+      .populate("createdBy")
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -81,12 +115,20 @@ export const getProblems = async (req, res) => {
 export const updateProblem = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, assignedTo } = req.body;
+    const { status, assignedTo, priority } = req.body;
 
     // Build update object (only include fields that were sent)
     const updates = {};
+
+    // If complaint is assigned, move it to In Progress by default.
+    if (assignedTo) {
+      updates.assignedTo = assignedTo;
+      updates.status = "In Progress";
+    }
+
+    // Manual status update should still work (e.g., Resolved).
     if (status) updates.status = status;
-    if (assignedTo) updates.assignedTo = assignedTo;
+    if (priority) updates.priority = priority;
 
     // Find and update the problem
     const problem = await Problem.findByIdAndUpdate(id, updates, {

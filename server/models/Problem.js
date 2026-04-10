@@ -43,6 +43,15 @@ const problemSchema = new mongoose.Schema(
       default: null,
     },
 
+    // Cloudinary image details
+    issueImage: {
+      type: {
+        url: String,
+        filename: String,
+      },
+      default: null,
+    },
+
     // Current status of the complaint
     status: {
       type: String,
@@ -57,9 +66,10 @@ const problemSchema = new mongoose.Schema(
       default: "Medium",
     },
 
-    // Name of the student who submitted
+    // Student who submitted the complaint
     createdBy: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Student",
       required: true,
     },
 

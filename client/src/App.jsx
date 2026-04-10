@@ -13,14 +13,13 @@ import StudentDashboard from '@/pages/StudentDashboard';
 import AdminDashboard from '@/pages/AdminDashboard';
 import SubmitComplaint from '@/pages/SubmitComplaint';
 import RegisterPage from '@/pages/RegisterPage';
+import ProfilePage from '@/pages/ProfilePage';
 import NotFound from "./pages/NotFound.jsx";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   const [user, setUser] = useState(getCurrentUser());
-
-
 
   const refresh = () => setUser(getCurrentUser());
 
@@ -39,6 +38,7 @@ const App = () => {
             <Route path="/dashboard" element={user?.role === 'student' ? <StudentDashboard /> : <Navigate to="/login" />} />
             <Route path="/submit" element={user?.role === 'student' ? <SubmitComplaint /> : <Navigate to="/login" />} />
             <Route path="/admin" element={user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/login" />} />
+            <Route path="/profile" element={user ? <ProfilePage onProfileUpdate={refresh} /> : <Navigate to="/login" />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

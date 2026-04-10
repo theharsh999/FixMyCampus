@@ -26,6 +26,11 @@ const adminSchema = new mongoose.Schema(
       enum: ["COMP", "IT", "AIML", "AIDS", "ENTC", "IoT", "MECH", "MME", "CSE", "ECS", "CIVIL"],
       required: true,
     },
+
+    profileImage: {
+      url: String,
+      filename: String,
+    },
   },
   {
     timestamps: true,

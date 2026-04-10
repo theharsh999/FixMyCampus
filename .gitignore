@@ -26,3 +26,5 @@ server/uploads/*
 # Lock files (optional — keep if you want reproducible installs)
 # bun.lock
 # bun.lockb
+
+passwords.txt

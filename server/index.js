@@ -37,5 +37,5 @@ app.use("/api/auth", authRoutes);
 // ─── Start Server ───────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`\n🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📁 Environment: ${process.env.NODE_ENV || "development"}\n`);
+  console.log(`Environment: ${process.env.NODE_ENV || "development"}\n`);
 });
