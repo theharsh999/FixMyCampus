@@ -2,9 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getCurrentUser, loginUser } from '@/lib/store';
-import { getProblems, getProfile, resolveMediaUrl } from '@/lib/api';
-
-const API_BASE = 'http://localhost:5001/api';
+import { API_BASE, getProblems, getProfile, resolveMediaUrl } from '@/lib/api';
 
 export default function ProfilePage({ onProfileUpdate }) {
   const [user, setUser] = useState(getCurrentUser());

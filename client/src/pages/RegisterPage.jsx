@@ -4,10 +4,9 @@ import { Wrench, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { API_BASE } from '@/lib/api';
 import { getCurrentUser, loginUser } from '@/lib/store';
 import { useNavigate, Link } from 'react-router-dom';
-
-const API_BASE = "http://localhost:5001/api";
 const departments = ['COMP', 'IT', 'AIML', 'AIDS', 'ENTC', 'IoT', 'MECH', 'MME', 'CSE', 'ECS', 'CIVIL'];
 
 export default function RegisterPage() {

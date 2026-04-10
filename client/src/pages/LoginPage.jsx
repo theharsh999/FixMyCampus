@@ -3,10 +3,9 @@ import { motion } from 'framer-motion';
 import { Wrench, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { API_BASE } from '@/lib/api';
 import { loginUser } from '@/lib/store';
 import { Link } from 'react-router-dom';
-
-const API_BASE = "http://localhost:5001/api";
 
 export default function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('');
