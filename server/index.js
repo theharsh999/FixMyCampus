@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
+import multer from "multer";
 import connectDB from "./config/db.js";
 import problemRoutes from "./routes/problemRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -21,6 +23,9 @@ app.use(express.json());
 // Allow frontend (localhost:8080) to call this backend
 app.use(cors());
 
+// Serve uploaded files from local disk
+app.use("/uploads", express.static(path.resolve("uploads")));
+
 // ─── Test Route ─────────────────────────────────────────
 app.get("/", (req, res) => {
   res.json({
@@ -33,6 +38,30 @@ app.get("/", (req, res) => {
 // ─── API Routes ─────────────────────────────────────────
 app.use("/api/problems", problemRoutes);
 app.use("/api/auth", authRoutes);
+
+// Unified error handler for file upload failures and other API errors
+app.use((err, _req, res, _next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({
+        success: false,
+        message: "Image must be 5MB or smaller",
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+
+  if (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Internal server error",
+    });
+  }
+});
 
 // ─── Start Server ───────────────────────────────────────
 app.listen(PORT, () => {
