@@ -57,13 +57,11 @@ const studentSchema = new mongoose.Schema(
 
 studentSchema.index({ class: 1, rollNo: 1 }, { unique: true });
 
-studentSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  if (this.password.startsWith("$2")) return next();
+studentSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
+  if (this.password.startsWith("$2")) return;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-
-  next();
 });
 
 studentSchema.methods.comparePassword = async function (enteredPassword) {
