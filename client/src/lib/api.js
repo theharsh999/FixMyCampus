@@ -2,6 +2,7 @@
 // Backend API calls (MongoDB source of truth)
 
 export const API_BASE = "https://fixmycampus-e2zg.onrender.com/api";
+// export const API_BASE = "http://localhost:5001/api";
 const BACKEND_BASE = API_BASE.replace(/\/api$/, "");
 
 export function resolveMediaUrl(pathOrUrl) {
