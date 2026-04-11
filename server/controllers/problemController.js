@@ -109,6 +109,18 @@ function keywordSimilarity(aKeywords, bKeywords) {
   };
 }
 
+const PRIORITY_MAP = {
+  Low: 1,
+  Medium: 2,
+  High: 3,
+};
+
+const REVERSE_PRIORITY_MAP = {
+  1: "Low",
+  2: "Medium",
+  3: "High",
+};
+
 const PRIORITY_ORDER = { Low: 1, Medium: 2, High: 3 };
 const CLUSTER_SIMILARITY_THRESHOLD = 0.5;
 
@@ -182,6 +194,19 @@ export const createProblem = async (req, res) => {
         new Set([...(matchedProblem.keywords || []), ...incomingKeywords])
       );
 
+      const existingPriorityNumeric = PRIORITY_MAP[matchedProblem.priority] || 2;
+      const newPriorityNumeric = PRIORITY_MAP[priority] || 2;
+      const previousReports = matchedProblem.reportedBy?.length || 0;
+      const totalReports = previousReports + 1;
+
+      const totalScore =
+        (existingPriorityNumeric * previousReports) + newPriorityNumeric;
+      const average = totalScore / totalReports;
+      const rounded = Math.round(average);
+      const finalPriority = REVERSE_PRIORITY_MAP[rounded] || "Medium";
+
+      matchedProblem.priority = finalPriority;
+
       // Keep unique reporter IDs for impact-aware prioritization.
       const hasReporter = (matchedProblem.reportedBy || []).some(
         (studentId) => studentId.toString() === String(createdBy)
@@ -190,13 +215,6 @@ export const createProblem = async (req, res) => {
       if (!hasReporter) {
         matchedProblem.reportedBy = [...(matchedProblem.reportedBy || []), createdBy];
       }
-
-      const reporterCount = Math.max(
-        (matchedProblem.reportedBy || []).length,
-        (matchedProblem.duplicateCount || 0) + 1
-      );
-      const computedPriority = priorityFromReporterCount(reporterCount);
-      matchedProblem.priority = maxPriority(matchedProblem.priority || "Low", computedPriority);
 
       await matchedProblem.save();
 
