@@ -1,4 +1,60 @@
 import Problem from "../models/Problem.js";
+import Student from "../models/Student.js";
+import { sendEmail } from "../utils/mailer.js";
+
+async function sendEmailSafely(sendFn) {
+  try {
+    await sendFn();
+  } catch (error) {
+    console.warn("Notification email failed:", error.message);
+  }
+}
+
+async function resolveNotificationEmail(problem) {
+  let email = problem?.userEmail;
+
+  if (!email && problem?.createdBy) {
+    // createdBy may already be populated in update flow.
+    if (typeof problem.createdBy === "object" && problem.createdBy.email) {
+      email = problem.createdBy.email;
+    } else {
+      const creator = await Student.findById(problem.createdBy).select("email");
+      email = creator?.email || null;
+    }
+  }
+
+  if (!email) {
+    console.log("No email found!");
+    return null;
+  }
+
+  // Backfill legacy complaints that were created before userEmail was added.
+  if (!problem.userEmail) {
+    problem.userEmail = email;
+    await problem.save();
+  }
+
+  console.log("Resolved email:", email);
+  return email;
+}
+
+function buildComplaintMailBody(problem, message) {
+  const imageLine = problem.imageUrl ? `\nImage: ${problem.imageUrl}` : "";
+  return `${message}\n\nTicket ID: ${problem.ticketId}\nTitle: ${problem.title}\nStatus: ${problem.status}${imageLine}`;
+}
+
+function complaintEmailProps(problem, message) {
+  return {
+    message,
+    ticketId: problem.ticketId,
+    title: problem.title,
+    status: problem.status,
+    category: problem.category,
+    location: problem.location,
+    description: problem.description,
+    imageUrl: problem.imageUrl,
+  };
+}
 
 function getUploadedImagePath(file) {
   if (!file?.path) return null;
@@ -122,6 +178,15 @@ export const createProblem = async (req, res) => {
       });
     }
 
+    const student = await Student.findById(createdBy).select("email");
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
     // Smart clustering: compare keyword overlap for complaints from the
     // same category and location in the last 15 minutes.
     const fifteenMinutesAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -171,7 +236,21 @@ export const createProblem = async (req, res) => {
       const computedPriority = priorityFromReporterCount(reporterCount);
       matchedProblem.priority = maxPriority(matchedProblem.priority || "Low", computedPriority);
 
+      if (!matchedProblem.userEmail) {
+        const matchedCreator = await Student.findById(matchedProblem.createdBy).select("email");
+        matchedProblem.userEmail = matchedCreator?.email || student.email;
+      }
+
       await matchedProblem.save();
+
+      await sendEmailSafely(() =>
+        sendEmail(
+          student.email,
+          "Complaint Submitted",
+          buildComplaintMailBody(matchedProblem, "Your complaint has been received"),
+          complaintEmailProps(matchedProblem, "Your complaint has been received")
+        )
+      );
 
       return res.status(200).json({
         success: true,
@@ -191,15 +270,25 @@ export const createProblem = async (req, res) => {
       category,
       priority: priority || "Medium",
       keywords: incomingKeywords,
-      duplicateCount: 0,
+      duplicateCount: 1,
       reportedBy: [createdBy],
       description,
       location,
       imageUrl: issueImageUrl,
       issueImage,
       createdBy,
+      userEmail: student.email,
       department,
     });
+
+    await sendEmailSafely(() =>
+      sendEmail(
+        student.email,
+        "Complaint Submitted",
+        buildComplaintMailBody(problem, "Your complaint has been received"),
+        complaintEmailProps(problem, "Your complaint has been received")
+      )
+    );
 
     return res.status(201).json({
       success: true,
@@ -251,31 +340,71 @@ export const updateProblem = async (req, res) => {
     const { id } = req.params;
     const { status, assignedTo, priority } = req.body;
 
-    // Build update object (only include fields that were sent)
-    const updates = {};
+    const existingProblem = await Problem.findById(id).populate("createdBy", "email");
 
-    // If complaint is assigned, move it to In Progress by default.
-    if (assignedTo) {
-      updates.assignedTo = assignedTo;
-      updates.status = "In Progress";
-    }
-
-    // Manual status update should still work (e.g., Resolved).
-    if (status) updates.status = status;
-    if (priority) updates.priority = priority;
-
-    // Find and update the problem
-    const problem = await Problem.findByIdAndUpdate(id, updates, {
-      new: true,           // Return the updated document
-      runValidators: true, // Run schema validation on update
-    });
-
-    // If no problem found with that ID
-    if (!problem) {
+    if (!existingProblem) {
       return res.status(404).json({
         success: false,
         message: "Problem not found",
       });
+    }
+
+    const previousStatus = existingProblem.status;
+
+    // Apply updates manually to avoid findByIdAndUpdate stale-data issues.
+    if (assignedTo) {
+      existingProblem.assignedTo = assignedTo;
+      existingProblem.status = "In Progress";
+    }
+
+    // Manual status update takes precedence (e.g., Resolved).
+    if (status) existingProblem.status = status;
+    if (priority) existingProblem.priority = priority;
+
+    await existingProblem.save();
+
+    const problem = existingProblem;
+    const hasStatusChanged = problem.status !== previousStatus;
+    const notificationEmail = await resolveNotificationEmail(problem);
+
+    console.log("📩 Notification Email:", notificationEmail);
+    console.log("Previous Status:", previousStatus);
+    console.log("New Status:", problem.status);
+    console.log("Has Status Changed:", hasStatusChanged);
+
+    if (notificationEmail) {
+      if (assignedTo && !existingProblem.assignedTo) {
+        await sendEmailSafely(() =>
+          sendEmail(
+            notificationEmail,
+            "Complaint Assigned",
+            buildComplaintMailBody(problem, "Your complaint has been assigned"),
+            complaintEmailProps(problem, "Your complaint has been assigned")
+          )
+        );
+      }
+
+      if (hasStatusChanged && problem.status === "In Progress") {
+        await sendEmailSafely(() =>
+          sendEmail(
+            notificationEmail,
+            "Complaint In Progress",
+            buildComplaintMailBody(problem, "Work has started on your complaint"),
+            complaintEmailProps(problem, "Work has started on your complaint")
+          )
+        );
+      }
+
+      if (hasStatusChanged && problem.status === "Resolved") {
+        await sendEmailSafely(() =>
+          sendEmail(
+            notificationEmail,
+            "Complaint Resolved",
+            buildComplaintMailBody(problem, "Your complaint has been resolved"),
+            complaintEmailProps(problem, "Your complaint has been resolved")
+          )
+        );
+      }
     }
 
     res.status(200).json({

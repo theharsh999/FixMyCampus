@@ -31,6 +31,7 @@ export default function SubmitComplaint() {
     title: '',
     description: '',
     location: '',
+    submit: '',
   });
   const [form, setForm] = useState({ title: '', category: '', priority: 'Medium', description: '', location: '' });
   const [imageFile, setImageFile] = useState(null);
@@ -81,6 +82,7 @@ export default function SubmitComplaint() {
       title: '',
       description: '',
       location: '',
+      submit: '',
     };
 
     if (!trimmedTitle) {
@@ -115,11 +117,7 @@ export default function SubmitComplaint() {
     }
 
     setErrors({ title: '', description: '', location: '' });
-    setAbuseFields({
-      title: false,
-      description: false,
-      location: false,
-    });
+    setHasAbuse(false);
     setShowAbusePopup(false);
     setLoading(true);
     setCooldown(true);
@@ -132,20 +130,26 @@ export default function SubmitComplaint() {
         throw new Error('Invalid department mapping for current user. Please re-login.');
       }
 
-      const formData = new FormData();
-      formData.append('title', form.title);
-      formData.append('category', form.category);
-      formData.append('priority', form.priority);
-      formData.append('description', form.description);
-      formData.append('location', form.location);
-      formData.append('department', department);
-      formData.append('createdBy', user?._id || '');
+      const payload = {
+        title: form.title,
+        category: form.category,
+        priority: form.priority,
+        description: form.description,
+        location: form.location,
+        department,
+        createdBy: user?._id || '',
+      };
+
+      let problem;
 
       if (imageFile) {
+        const formData = new FormData();
+        Object.entries(payload).forEach(([key, val]) => formData.append(key, val));
         formData.append('image', imageFile);
+        problem = await createProblem(formData);
+      } else {
+        problem = await createProblem(payload);
       }
-
-      const problem = await createProblem(formData);
       setForm({ title: '', category: '', priority: 'Medium', description: '', location: '' });
       setImageFile(null);
       setImagePreview(null);
@@ -158,6 +162,7 @@ export default function SubmitComplaint() {
       setSubmitted(problem.ticketId);
     } catch (err) {
       console.error('Failed to submit:', err.message);
+      setErrors((prev) => ({ ...prev, submit: err.message || 'Something went wrong. Please try again.' }));
     } finally {
       setLoading(false);
       setTimeout(() => {
@@ -339,6 +344,10 @@ export default function SubmitComplaint() {
           >
             <Send className="w-4 h-4 mr-2" /> {loading ? 'Submitting...' : 'Submit Complaint'}
           </Button>
+
+          {errors.submit && (
+            <p className="text-sm text-center text-red-500">{errors.submit}</p>
+          )}
         </form>
       </motion.div>
     </div>

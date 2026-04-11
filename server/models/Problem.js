@@ -94,6 +94,14 @@ const problemSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Student email for notifications
+    userEmail: {
+      type: String,
+      required: true,
+      lowercase: true,
+      trim: true,
+    },
+
     // Department responsible for handling the complaint
     department: {
       type: String,

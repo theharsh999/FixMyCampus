@@ -2,6 +2,8 @@ import Student from "../models/Student.js";
 import Admin from "../models/Admin.js";
 import bcrypt from "bcrypt";
 import cloudinary from "../config/cloudinary.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 function getUploadedImagePath(file) {
   if (!file?.path) return null;
@@ -29,11 +31,48 @@ const getAdminPayload = (admin) => ({
   role: "admin",
 });
 
+function createAuthToken(student) {
+  return jwt.sign(
+    {
+      id: student._id,
+      email: student.email,
+      role: "student",
+    },
+    process.env.JWT_AUTH_SECRET || "auth-secret",
+    { expiresIn: "7d" }
+  );
+}
+
+// Supports old plain-text passwords and upgrades them to bcrypt hash.
+async function verifyAndUpgradePassword(user, plainPassword) {
+  if (!user?.password) return false;
+
+  let isPasswordValid = false;
+
+  try {
+    isPasswordValid = await bcrypt.compare(plainPassword, user.password);
+  } catch (_error) {
+    isPasswordValid = false;
+  }
+
+  if (isPasswordValid) return true;
+
+  // Backward compatibility for users created before password hashing was enabled.
+  if (user.password === plainPassword) {
+    user.password = await bcrypt.hash(plainPassword, 10);
+    await user.save();
+    return true;
+  }
+
+  return false;
+}
+
 // ─── 1. Student Register ────────────────────────────────
 // POST /api/auth/student/register
 export const studentRegister = async (req, res) => {
   try {
     const { name, email, password, class: studentClass, rollNo, div, year } = req.body;
+    const normalizedEmail = String(email || "").trim().toLowerCase();
     const parsedRollNo = Number(rollNo);
 
     if (Number.isNaN(parsedRollNo) || parsedRollNo < 1) {
@@ -51,11 +90,11 @@ export const studentRegister = async (req, res) => {
     }
 
     // Check if student already exists
-    const existing = await Student.findOne({ email });
+    const existing = await Student.findOne({ email: normalizedEmail });
     if (existing) {
       return res.status(400).json({
         success: false,
-        message: "Email already registered",
+        message: "Account already exists. Please login",
       });
     }
 
@@ -75,10 +114,10 @@ export const studentRegister = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create new student
-    const student = new Student({
+    const student = await Student.create({
       name,
       email,
-      password: hashedPassword,
+      password,
       class: studentClass,
       rollNo: parsedRollNo,
       div,
@@ -91,6 +130,7 @@ export const studentRegister = async (req, res) => {
 
     res.status(201).json({
       success: true,
+      message: "Registration successful",
       data: getStudentPayload(student),
     });
   } catch (error) {
@@ -113,9 +153,10 @@ export const studentRegister = async (req, res) => {
 export const studentLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = String(email || "").trim().toLowerCase();
 
     // Find student by email
-    const student = await Student.findOne({ email });
+    const student = await Student.findOne({ email: normalizedEmail });
     if (!student) {
       return res.status(401).json({
         success: false,
@@ -123,17 +164,19 @@ export const studentLogin = async (req, res) => {
       });
     }
 
-    const isMatch = await bcrypt.compare(password, student.password);
-
-    if (!isMatch) {
+    // Check password (plain text for now)
+    if (student.password !== password) {
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
       });
     }
 
+    const token = createAuthToken(student);
+
     res.status(200).json({
       success: true,
+      token,
       data: getStudentPayload(student),
     });
   } catch (error) {
@@ -149,9 +192,10 @@ export const studentLogin = async (req, res) => {
 export const adminRegister = async (req, res) => {
   try {
     const { name, email, password, department } = req.body;
+    const normalizedEmail = String(email || "").trim().toLowerCase();
 
     // Check if admin already exists
-    const existing = await Admin.findOne({ email });
+    const existing = await Admin.findOne({ email: normalizedEmail });
     if (existing) {
       return res.status(400).json({
         success: false,
@@ -163,10 +207,10 @@ export const adminRegister = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create new admin
-    const admin = new Admin({
+    const admin = await Admin.create({
       name,
       email,
-      password: hashedPassword,
+      password,
       department,
     });
 
@@ -191,9 +235,10 @@ export const adminRegister = async (req, res) => {
 export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = String(email || "").trim().toLowerCase();
 
     // Find admin by email
-    const admin = await Admin.findOne({ email });
+    const admin = await Admin.findOne({ email: normalizedEmail });
     if (!admin) {
       return res.status(401).json({
         success: false,
@@ -201,9 +246,8 @@ export const adminLogin = async (req, res) => {
       });
     }
 
-    const isMatch = await bcrypt.compare(password, admin.password);
-
-    if (!isMatch) {
+    // Check password (plain text for now)
+    if (admin.password !== password) {
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",

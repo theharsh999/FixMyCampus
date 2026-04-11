@@ -4,7 +4,6 @@ import { Wrench, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { API_BASE } from '@/lib/api';
 import { getCurrentUser, loginUser } from '@/lib/store';
 import { useNavigate, Link } from 'react-router-dom';
 const departments = ['COMP', 'IT', 'AIML', 'AIDS', 'ENTC', 'IoT', 'MECH', 'MME', 'CSE', 'ECS', 'CIVIL'];
@@ -86,14 +85,15 @@ export default function RegisterPage() {
         return;
       }
 
-      const userData = json.data;
-      loginUser(userData);
-      console.log('Saved user:', getCurrentUser());
+      if (role === 'student') {
+        setSuccessMessage(json.message || 'Registration successful. Please verify your email before login.');
+        setTimeout(() => navigate('/login'), 1800);
+        return;
+      }
 
+      const userData = json.data;
       if (userData?.role === 'admin') {
         window.location.href = '/admin';
-      } else {
-        window.location.href = '/dashboard';
       }
     } catch (err) {
       setErrorMessage('Server error. Please try again.');
