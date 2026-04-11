@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { MapPin, CheckCircle, Clock, Loader2, AlertTriangle, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getProblems, resolveMediaUrl, updateProblem } from '@/lib/api';
+import { getProblems, getStaffByDepartment, resolveMediaUrl, updateProblem } from '@/lib/api';
 import { getCurrentUser } from '@/lib/store';
 import { StatusBadge, PriorityBadge } from '@/components/StatusBadge';
 import { format } from 'date-fns';
@@ -16,10 +16,25 @@ export default function AdminDashboard() {
   const [assignMode, setAssignMode] = useState(false);
   const [assignedName, setAssignedName] = useState('');
   const [assignError, setAssignError] = useState('');
+  const [staffList, setStaffList] = useState([]);
+  const [selectedStaffEmail, setSelectedStaffEmail] = useState('');
   const [priorityEditMode, setPriorityEditMode] = useState(false);
   const [newPriority, setNewPriority] = useState('Medium');
   const [loadedImages, setLoadedImages] = useState({});
   const user = getCurrentUser();
+
+  const getStaffDepartmentKey = (department) => {
+    const departmentMap = {
+      COMP: 'COMPS',
+      CSE: 'COMPS',
+      ECS: 'COMPS',
+      AIDS: 'AI&DS',
+      AIML: 'AI&ML',
+      ENTC: 'EXTC',
+    };
+
+    return departmentMap[department] || department;
+  };
 
   const markImageLoaded = (key) => {
     setLoadedImages((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
@@ -31,6 +46,8 @@ export default function AdminDashboard() {
     setAssignMode(false);
     setAssignedName(problem.assignedTo || '');
     setAssignError('');
+    setStaffList([]);
+    setSelectedStaffEmail('');
     setPriorityEditMode(false);
     setNewPriority(problem.priority || 'Medium');
   };
@@ -41,9 +58,50 @@ export default function AdminDashboard() {
     setAssignMode(false);
     setAssignedName('');
     setAssignError('');
+    setStaffList([]);
+    setSelectedStaffEmail('');
     setPriorityEditMode(false);
     setNewPriority('Medium');
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadStaffForComplaint = async () => {
+      if (!isModalOpen || !selectedProblem?.department) {
+        setStaffList([]);
+        setSelectedStaffEmail('');
+        return;
+      }
+
+      try {
+        const departmentKey = getStaffDepartmentKey(selectedProblem.department);
+        const staff = await getStaffByDepartment(departmentKey);
+
+        if (cancelled) return;
+
+        setStaffList(staff);
+
+        const existingAssignee = staff.find(
+          (member) =>
+            member.name === selectedProblem.assignedTo || member.email === selectedProblem.assignedTo
+        );
+
+        setSelectedStaffEmail(existingAssignee?.email || '');
+      } catch (err) {
+        if (cancelled) return;
+        setStaffList([]);
+        setSelectedStaffEmail('');
+        console.error('Failed to fetch staff:', err.message);
+      }
+    };
+
+    loadStaffForComplaint();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isModalOpen, selectedProblem]);
 
   const formatYearShort = (year) => {
     const map = {
@@ -145,13 +203,15 @@ export default function AdminDashboard() {
   const handleAssignSave = async () => {
     if (!selectedProblem) return;
 
-    if (!assignedName.trim()) {
-      setAssignError('Please enter a valid name');
+    const selectedStaff = staffList.find((staff) => staff.email === selectedStaffEmail);
+    const name = selectedStaff?.name || assignedName.trim();
+
+    if (!name) {
+      setAssignError('Please select a staff member');
       return;
     }
 
     try {
-      const name = assignedName.trim();
       setAssignError('');
 
       await updateProblem(selectedProblem._id, { assignedTo: name });
@@ -177,7 +237,8 @@ export default function AdminDashboard() {
       }));
 
       setAssignMode(false);
-      setAssignedName('');
+      setAssignedName(name);
+      setSelectedStaffEmail(selectedStaff?.email || '');
     } catch (err) {
       console.error('Assign failed', err);
     }
@@ -487,28 +548,45 @@ export default function AdminDashboard() {
 
               {assignMode && (
                 <div className="mt-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Enter name"
-                      value={assignedName}
+                  <div className="flex gap-2 flex-wrap">
+                    <select
+                      value={selectedStaffEmail}
                       onChange={(e) => {
-                        setAssignedName(e.target.value);
+                        const selectedEmail = e.target.value;
+                        const selectedStaff = staffList.find((staff) => staff.email === selectedEmail);
+
+                        setSelectedStaffEmail(selectedEmail);
+                        setAssignedName(selectedStaff?.name || '');
                         setAssignError('');
                       }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAssignSave();
-                        }
-                      }}
                       className="border border-border rounded-md px-2 py-1 w-full bg-background"
-                    />
+                    >
+                      <option value="">
+                        {staffList.length ? 'Select Staff' : 'No staff available for this department'}
+                      </option>
+                      {staffList.map((staff) => (
+                        <option key={staff.email} value={staff.email}>
+                          {staff.name}
+                        </option>
+                      ))}
+                    </select>
                     <Button variant="outline" onClick={handleAssignSave}>Save</Button>
-                    <Button variant="ghost" onClick={() => { setAssignMode(false); setAssignedName(''); setAssignError(''); }}>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setAssignMode(false);
+                        setSelectedStaffEmail('');
+                        setAssignError('');
+                      }}
+                    >
                       Cancel
                     </Button>
                   </div>
+                  {selectedStaffEmail && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {staffList.find((staff) => staff.email === selectedStaffEmail)?.email}
+                    </p>
+                  )}
                   {assignError && (
                     <p className="text-xs text-red-500 mt-1">{assignError}</p>
                   )}

@@ -69,19 +69,19 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div className="container py-8 px-4 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="container px-4 py-8 space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">My Complaints</h1>
-          <p className="text-muted-foreground text-sm">Track your submitted issues</p>
+          <p className="text-sm text-muted-foreground">Track your submitted issues</p>
         </div>
         <Button onClick={() => navigate('/submit')}>
-          <Plus className="mr-2 h-4 w-4" /> New Complaint
+          <Plus className="w-4 h-4 mr-2" /> New Complaint
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: 'Total', value: stats.total, icon: Tag, color: 'text-foreground', key: 'all' },
           { label: 'Pending', value: stats.pending, icon: Clock, color: 'text-warning', key: 'Pending' },
@@ -105,20 +105,20 @@ export default function StudentDashboard() {
 
       {/* List */}
       {filteredComplaints.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground">
+        <div className="py-20 text-center text-muted-foreground">
           <p className="text-lg font-medium">
             {filter === 'Pending' && 'No pending complaints'}
             {filter === 'In Progress' && 'No complaints in progress'}
             {filter === 'Resolved' && 'No resolved complaints'}
             {filter === 'all' && 'No complaints found'}
           </p>
-          <p className="text-sm mt-1">Try another filter or submit a new complaint.</p>
+          <p className="mt-1 text-sm">Try another filter or submit a new complaint.</p>
           {filter === 'all' && (
             <Button className="mt-4" onClick={() => navigate('/submit')}>Submit Complaint</Button>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {filteredComplaints.map((c, i) => (
             <motion.div
               key={c._id}
@@ -131,9 +131,9 @@ export default function StudentDashboard() {
                 setIsModalOpen(true);
               }}
             >
-              <div className="flex gap-4 items-start">
+              <div className="flex items-start gap-4">
                 {c.issueImage?.url ? (
-                  <div className="relative h-20 w-20 flex-shrink-0">
+                  <div className="relative flex-shrink-0 w-20 h-20">
                     {!loadedImages[`card-${c._id}`] && (
                       <div className="absolute inset-0 rounded-lg bg-muted animate-pulse" />
                     )}
@@ -146,20 +146,20 @@ export default function StudentDashboard() {
                     />
                   </div>
                 ) : (
-                  <div className="h-20 w-20 rounded-lg border border-border bg-muted flex-shrink-0" />
+                  <div className="flex-shrink-0 w-20 h-20 border rounded-lg border-border bg-muted" />
                 )}
 
-                <div className="space-y-2 flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-mono text-muted-foreground">{c.ticketId}</span>
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-xs text-muted-foreground">{c.ticketId}</span>
                     <StatusBadge status={c.status} />
                     <PriorityBadge priority={c.priority} />
                   </div>
 
-                  <h3 className="font-semibold text-base leading-tight">{c.title}</h3>
+                  <h3 className="text-base font-semibold leading-tight">{c.title}</h3>
 
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{c.location}</span>
+                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{c.location}</span>
                     <span>{format(new Date(c.createdAt), 'dd MMM yyyy')}</span>
                   </div>
                 </div>
@@ -171,7 +171,7 @@ export default function StudentDashboard() {
 
       {isModalOpen && selectedProblem && (
         <div
-          className="fixed inset-0 z-50 bg-black/30 dark:bg-black/60 flex items-center justify-center px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/30 dark:bg-black/60"
           onClick={closeModal}
         >
           <div
@@ -180,17 +180,17 @@ export default function StudentDashboard() {
           >
             <button
               type="button"
-              className="absolute top-3 right-3 text-xl leading-none text-gray-700 dark:text-gray-300 hover:opacity-80"
+              className="absolute text-xl leading-none text-gray-700 top-3 right-3 dark:text-gray-300 hover:opacity-80"
               onClick={closeModal}
               aria-label="Close"
             >
               ❌
             </button>
 
-            <h2 className="text-xl font-bold mb-4 pr-8">{selectedProblem.title}</h2>
+            <h2 className="pr-8 mb-4 text-xl font-bold">{selectedProblem.title}</h2>
 
             {selectedProblem.issueImage?.url && (
-              <div className="relative rounded-lg mb-4 max-h-60 w-full overflow-hidden">
+              <div className="relative w-full mb-4 overflow-hidden rounded-lg max-h-60">
                 {!loadedImages[`modal-${selectedProblem._id}`] && (
                   <div className="absolute inset-0 bg-muted animate-pulse" />
                 )}
@@ -210,11 +210,11 @@ export default function StudentDashboard() {
               <p><span className="font-semibold">Ticket ID:</span> {selectedProblem.ticketId}</p>
               <p><span className="font-semibold">Location:</span> {selectedProblem.location}</p>
               <p><span className="font-semibold">Date:</span> {format(new Date(selectedProblem.createdAt), 'dd MMM yyyy')}</p>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold">Status:</span>
                 <StatusBadge status={selectedProblem.status} />
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold">Priority:</span>
                 <PriorityBadge priority={selectedProblem.priority} />
               </div>

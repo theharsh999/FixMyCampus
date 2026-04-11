@@ -5,6 +5,7 @@ import multer from "multer";
 import connectDB from "./config/db.js";
 import problemRoutes from "./routes/problemRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import staffRoutes from "./routes/staffRoutes.js";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -34,6 +35,7 @@ app.get("/", (req, res) => {
 // ─── API Routes ─────────────────────────────────────────
 app.use("/api/problems", problemRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/staff", staffRoutes);
 
 // Unified error handler for file upload failures and other API errors
 app.use((err, _req, res, _next) => {

@@ -1,4 +1,31 @@
 import Problem from "../models/Problem.js";
+import { staffData } from "../data/staffData.js";
+
+async function sendEmail(to, subject, htmlContent) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.MAIL_FROM || "onboarding@resend.dev";
+
+  if (!apiKey || !to) return;
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to,
+      subject,
+      html: htmlContent,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "Failed to send email");
+  }
+}
 
 function getUploadedImagePath(file) {
   if (!file?.path) return null;
@@ -104,8 +131,8 @@ export const createProblem = async (req, res) => {
     const issueImageUrl = getUploadedImagePath(req.file);
     const issueImage = issueImageUrl
       ? {
-          url: issueImageUrl,
-        }
+        url: issueImageUrl,
+      }
       : null;
 
     if (!department) {
@@ -250,13 +277,15 @@ export const updateProblem = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, assignedTo, priority } = req.body;
+    const trimmedAssignedTo = typeof assignedTo === "string" ? assignedTo.trim() : "";
+    const isAssignedToUpdated = Boolean(trimmedAssignedTo);
 
     // Build update object (only include fields that were sent)
     const updates = {};
 
     // If complaint is assigned, move it to In Progress by default.
-    if (assignedTo) {
-      updates.assignedTo = assignedTo;
+    if (isAssignedToUpdated) {
+      updates.assignedTo = trimmedAssignedTo;
       updates.status = "In Progress";
     }
 
@@ -276,6 +305,55 @@ export const updateProblem = async (req, res) => {
         success: false,
         message: "Problem not found",
       });
+    }
+
+    if (isAssignedToUpdated) {
+      const staff = Object.values(staffData)
+        .flat()
+        .find((member) => member.name.toLowerCase() === trimmedAssignedTo.toLowerCase());
+
+      const email = staff?.email;
+
+      if (email) {
+        try {
+          const htmlContent = `
+<div style="font-family: Arial, sans-serif; padding: 16px; line-height: 1.6;">
+  <h2 style="color: #2563eb;">New Complaint Assigned 🚨</h2>
+
+  <p>Hello <b>${staff.name}</b>,</p>
+
+  <p>You have been assigned a new complaint. Below are the details:</p>
+
+  <div style="background: #f3f4f6; padding: 12px; border-radius: 8px;">
+    <p><b>Title:</b> ${problem.title}</p>
+    <p><b>Description:</b> ${problem.description}</p>
+    <p><b>Location:</b> ${problem.location}</p>
+    <p><b>Status:</b> ${problem.status}</p>
+  </div>
+
+  ${
+    problem.issueImage?.url
+      ? `<p><b>Image:</b><br/> <img src="${problem.issueImage.url}" style="max-width: 100%; border-radius: 8px;" /> </p>`
+      : ""
+  }
+
+  <p style="margin-top: 16px;">
+    Please check the dashboard for more details.
+  </p>
+
+  <hr style="margin: 16px 0;" />
+
+  <p style="font-size: 12px; color: gray;">
+    FixMyCampus • Automated Notification System
+  </p>
+</div>
+`;
+
+          await sendEmail(email, "New Complaint Assigned", htmlContent);
+        } catch (mailError) {
+          console.error("Failed to send assignment email:", mailError.message);
+        }
+      }
     }
 
     res.status(200).json({

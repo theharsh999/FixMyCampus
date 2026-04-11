@@ -1,8 +1,8 @@
 // ─── API Helper for FixMyCampus ─────────────────────────
 // Backend API calls (MongoDB source of truth)
 
-export const API_BASE = "https://fixmycampus-e2zg.onrender.com/api";
-// export const API_BASE = "http://localhost:5001/api";
+// export const API_BASE = "https://fixmycampus-e2zg.onrender.com/api";
+export const API_BASE = "http://localhost:5001/api";
 const BACKEND_BASE = API_BASE.replace(/\/api$/, "");
 
 export function resolveMediaUrl(pathOrUrl) {
@@ -96,6 +96,20 @@ export async function getProfile({ email, role }) {
 
   if (!res.ok) {
     throw new Error(json.message || "Failed to fetch profile");
+  }
+
+  return json.data;
+}
+
+// ─── 5. Get staff list by department ───────────────────
+// Used by: AdminDashboard.jsx
+export async function getStaffByDepartment(department) {
+  const encodedDepartment = encodeURIComponent(department || "");
+  const res = await fetch(`${API_BASE}/staff/${encodedDepartment}`);
+  const json = await res.json();
+
+  if (!res.ok) {
+    throw new Error(json.message || "Failed to fetch staff");
   }
 
   return json.data;

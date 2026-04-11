@@ -91,8 +91,8 @@ export default function ProfilePage({ onProfileUpdate }) {
 
   if (!user) {
     return (
-      <div className="container py-10 px-4">
-        <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
+      <div className="container px-4 py-10">
+        <div className="p-6 text-sm border rounded-xl border-border bg-card text-muted-foreground">
           User not found. Please login again.
         </div>
       </div>
@@ -193,19 +193,19 @@ export default function ProfilePage({ onProfileUpdate }) {
   };
 
   return (
-    <div className="container py-8 px-4">
-      <div className="mx-auto w-full max-w-3xl space-y-6">
+    <div className="container px-4 py-8">
+      <div className="w-full max-w-3xl mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">My Profile</h1>
           <p className="text-sm text-muted-foreground">Manage your account details and activity</p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:shadow-md">
+        <div className="p-6 transition-all duration-200 border shadow-sm rounded-2xl border-border bg-card hover:shadow-md">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-center gap-2">
                 {user.profileImage?.url ? (
-                  <div className="relative h-16 w-16">
+                  <div className="relative w-16 h-16">
                     {!profileImgLoaded && (
                       <div className="absolute inset-0 rounded-full bg-muted animate-pulse" />
                     )}
@@ -218,7 +218,7 @@ export default function ProfilePage({ onProfileUpdate }) {
                     />
                   </div>
                 ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground shadow-sm">
+                  <div className="flex items-center justify-center w-16 h-16 text-2xl font-bold rounded-full shadow-sm bg-primary text-primary-foreground">
                     {initials}
                   </div>
                 )}
@@ -241,7 +241,7 @@ export default function ProfilePage({ onProfileUpdate }) {
               <div className="space-y-1">
                 <p className="text-xl font-bold leading-tight">{user.name}</p>
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center rounded-full border border-border bg-muted px-3 py-1 text-xs font-semibold uppercase tracking-wide">
+                  <span className="inline-flex items-center px-3 py-1 text-xs font-semibold tracking-wide uppercase border rounded-full border-border bg-muted">
                     {roleLabel}
                   </span>
                   {isStudent && (
@@ -277,7 +277,7 @@ export default function ProfilePage({ onProfileUpdate }) {
             )}
           </div>
 
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 mt-6 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
               <label className="text-sm font-medium">Name</label>
               <Input
@@ -341,20 +341,20 @@ export default function ProfilePage({ onProfileUpdate }) {
           )}
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:shadow-md">
+        <div className="p-6 transition-all duration-200 border shadow-sm rounded-2xl border-border bg-card hover:shadow-md">
           <h2 className="text-lg font-semibold">My Activity</h2>
           <p className="mt-1 text-xs text-muted-foreground">Quick summary of your complaint activity</p>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-border bg-background p-4 transition-colors hover:bg-muted/40">
+          <div className="grid grid-cols-1 gap-3 mt-4 sm:grid-cols-3">
+            <div className="p-4 transition-colors border rounded-xl border-border bg-background hover:bg-muted/40">
               <p className="text-xs text-muted-foreground">Total Complaints</p>
               <p className="mt-1 text-2xl font-bold">{activity.total}</p>
             </div>
-            <div className="rounded-xl border border-border bg-background p-4 transition-colors hover:bg-muted/40">
+            <div className="p-4 transition-colors border rounded-xl border-border bg-background hover:bg-muted/40">
               <p className="text-xs text-muted-foreground">Pending</p>
               <p className="mt-1 text-2xl font-bold text-amber-600">{activity.pending}</p>
             </div>
-            <div className="rounded-xl border border-border bg-background p-4 transition-colors hover:bg-muted/40">
+            <div className="p-4 transition-colors border rounded-xl border-border bg-background hover:bg-muted/40">
               <p className="text-xs text-muted-foreground">Resolved</p>
               <p className="mt-1 text-2xl font-bold text-emerald-600">{activity.resolved}</p>
             </div>
