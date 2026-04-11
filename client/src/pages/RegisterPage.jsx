@@ -15,6 +15,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -44,12 +45,12 @@ export default function RegisterPage() {
   };
 
   const handleSubmit = async (e) => {
+    setIsSubmitted(true);
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
 
     if (role === 'student' && rollNoError) {
-      setErrorMessage(rollNoError);
       return;
     }
 
@@ -103,33 +104,35 @@ export default function RegisterPage() {
     }
   };
 
+  const showRollNoError = role === 'student' && isSubmitted && !!rollNoError;
+
   // Check if form is valid based on role
   const isValid = role === 'student'
-    ? form.name && form.email && form.password && form.class && form.rollNo !== '' && form.div && form.year && !rollNoError
+    ? form.name && form.email && form.password && form.class && form.div && form.year
     : form.name && form.email && form.password && form.department;
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md space-y-8"
       >
         {/* Logo */}
-        <div className="text-center space-y-3">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/25">
+        <div className="space-y-3 text-center">
+          <div className="flex items-center justify-center mx-auto shadow-lg h-14 w-14 rounded-2xl bg-primary shadow-primary/25">
             <Wrench className="h-7 w-7 text-primary-foreground" />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight">
             Fix<span className="text-gradient">My</span>Campus
           </h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-sm text-muted-foreground">
             Create your account to get started.
           </p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-border bg-card p-6 shadow-sm">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 border shadow-sm rounded-xl border-border bg-card">
           {/* Role Selection */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Register as</label>
@@ -141,6 +144,7 @@ export default function RegisterPage() {
                   onClick={() => {
                     setErrorMessage('');
                     setSuccessMessage('');
+                    setIsSubmitted(false);
                     setRole(r);
                   }}
                   className={`rounded-lg border-2 p-3 text-sm font-semibold capitalize transition-all ${
@@ -213,14 +217,11 @@ export default function RegisterPage() {
                   <label className="text-sm font-medium">Roll Number</label>
                   <Input
                     type="number"
-                    min="1"
-                    max="80"
                     placeholder="e.g. 12"
                     value={form.rollNo}
                     onChange={update('rollNo')}
-                    required
                   />
-                  {rollNoError && <p className="text-xs text-destructive">{rollNoError}</p>}
+                  {showRollNoError && <p className="text-xs text-destructive">{rollNoError}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Division</label>
@@ -283,12 +284,12 @@ export default function RegisterPage() {
           )}
 
           <Button type="submit" className="w-full" size="lg" disabled={!isValid || loading}>
-            {loading ? 'Registering...' : 'Register'} <ArrowRight className="ml-2 h-4 w-4" />
+            {loading ? 'Registering...' : 'Register'} <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
 
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="text-sm text-center text-muted-foreground">
             Already have an account?{' '}
-            <Link to="/login" className="text-primary font-medium hover:underline">
+            <Link to="/login" className="font-medium text-primary hover:underline">
               Login here
             </Link>
           </p>

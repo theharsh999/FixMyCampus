@@ -22,7 +22,6 @@ export default function AppHeader({ user, onLogout }) {
       ]
     : [
         { label: 'Dashboard', path: '/dashboard' },
-        { label: 'New Complaint', path: '/submit' },
         { label: 'Profile', path: '/profile' },
       ];
 
