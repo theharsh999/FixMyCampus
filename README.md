@@ -25,7 +25,7 @@ cd client
 npm install
 npm run dev
 ```
-Frontend runs at: **fix-my-campus-nine.vercel.app**
+Frontend runs at: **https://fix-my-campus-nine.vercel.app**
 
 ### 2. Backend (Server)
 
