@@ -1,5 +1,4 @@
 # 🔧 FixMyCampus — Smart Campus Complaint System
-Ashutosh dis this change
 
 A full-stack web application for reporting campus issues, tracking maintenance tickets, and ensuring accountability.
 
