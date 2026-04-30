@@ -25,7 +25,7 @@ cd client
 npm install
 npm run dev
 ```
-Frontend runs at: **http://localhost:8080**
+Frontend runs at: **fix-my-campus-nine.vercel.app**
 
 ### 2. Backend (Server)
 
@@ -34,7 +34,7 @@ cd server
 npm install
 npm run dev
 ```
-Backend runs at: **http://localhost:5001**
+Backend runs at: **https://fixmycampus-e2zg.onrender.com**
 
 > **Note:** Update `server/.env` with your MongoDB Atlas connection string before starting the backend.
 
