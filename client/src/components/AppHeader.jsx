@@ -21,7 +21,7 @@ export default function AppHeader({ user, onLogout }) {
         { label: 'Profile', path: '/profile' },
       ]
     : [
-        { label: 'Dashboard', path: '/dashboard' },
+        { label: 'Dashboard', path: '/student' },
         { label: 'Profile', path: '/profile' },
       ];
 

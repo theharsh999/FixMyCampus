@@ -32,6 +32,11 @@ app.get("/", (req, res) => {
   });
 });
 
+// ─── Health Check (wake-up for Render cold starts) ──────
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
 // ─── API Routes ─────────────────────────────────────────
 app.use("/api/problems", problemRoutes);
 app.use("/api/auth", authRoutes);

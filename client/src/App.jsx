@@ -13,6 +13,7 @@ import AdminDashboard from '@/pages/AdminDashboard';
 import SubmitComplaint from '@/pages/SubmitComplaint';
 import RegisterPage from '@/pages/RegisterPage';
 import ProfilePage from '@/pages/ProfilePage';
+import LandingPage from '@/pages/LandingPage';
 import NotFound from "./pages/NotFound.jsx";
 
 const queryClient = new QueryClient();
@@ -31,10 +32,11 @@ const App = () => {
         <BrowserRouter>
           {user && <AppHeader user={user} onLogout={refresh} />}
           <Routes>
-            <Route path="/" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} /> : <LoginPage onLogin={refresh}/>} />
-            <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} /> : <LoginPage onLogin={refresh} />} />
-            <Route path="/register" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} /> : <RegisterPage />} />
-            <Route path="/dashboard" element={user?.role === 'student' ? <StudentDashboard /> : <Navigate to="/login" />} />
+            <Route path="/" element={<Navigate to="/dashboard" />} />
+            <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/student'} /> : <LoginPage onLogin={refresh} />} />
+            <Route path="/register" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/student'} /> : <RegisterPage />} />
+            <Route path="/dashboard" element={<LandingPage />} />
+            <Route path="/student" element={user?.role === 'student' ? <StudentDashboard /> : <Navigate to="/login" />} />
             <Route path="/submit" element={user?.role === 'student' ? <SubmitComplaint /> : <Navigate to="/login" />} />
             <Route path="/admin" element={user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/login" />} />
             <Route path="/profile" element={user ? <ProfilePage onProfileUpdate={refresh} /> : <Navigate to="/login" />} />
